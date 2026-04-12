@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\Institution;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,11 +17,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        foreach (['Admin', 'Supervisor', 'Intern'] as $name) {
+            Role::findOrCreate($name, 'web');
+        }
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $institution = Institution::firstOrCreate([
+            'name' => 'Default Institution',
+        ], [
+            'type' => 'university',
         ]);
+
+        $admin = User::firstOrCreate([
+            'email' => 'admin@example.com',
+        ], [
+            'name' => 'System Admin',
+            'password' => 'password',
+            'institution_id' => $institution->id,
+        ]);
+
+        $admin->assignRole('Admin');
     }
 }

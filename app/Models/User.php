@@ -65,4 +65,19 @@ class User extends Authenticatable
     {
         return $this->hasMany(Project::class, 'assignee_id');
     }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->roles()->where('name', 'Admin')->exists();
+    }
+
+    public function canManageAllProjects(): bool
+    {
+        return $this->roles()->whereIn('name', ['Admin', 'Supervisor'])->exists();
+    }
 }

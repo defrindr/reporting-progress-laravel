@@ -7,10 +7,26 @@ use App\Http\Resources\LogbookResource;
 use App\Models\Logbook;
 use App\Models\Period;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class LogbookController extends Controller
 {
-    public function store(LogbookRequest $request): LogbookResource|JsonResponse
+    public function index(Request $request)
+    {
+        $query = Logbook::query()->with(['user', 'period', 'media']);
+
+        if ($request->filled('period_id')) {
+            $query->where('period_id', $request->integer('period_id'));
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->integer('user_id'));
+        }
+
+        return LogbookResource::collection($query->latest('report_date')->paginate(15));
+    }
+
+    public function store(LogbookRequest $request): JsonResponse
     {
         $data = $request->validated();
         $reportDate = $data['report_date'];
@@ -41,6 +57,53 @@ class LogbookController extends Controller
             $logbook->addMediaFromRequest('appendix')->toMediaCollection('appendix');
         }
 
+        return (new LogbookResource($logbook->load(['period', 'user', 'media'])))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    public function show(Logbook $logbook): LogbookResource
+    {
         return new LogbookResource($logbook->load(['period', 'user', 'media']));
+    }
+
+    public function update(LogbookRequest $request, Logbook $logbook): LogbookResource|JsonResponse
+    {
+        $data = $request->validated();
+        $reportDate = $data['report_date'];
+
+        $activePeriod = Period::query()
+            ->whereDate('start_date', '<=', $reportDate)
+            ->whereDate('end_date', '>=', $reportDate)
+            ->first();
+
+        if (! $activePeriod) {
+            return response()->json(['message' => 'No active period found for this report date'], 422);
+        }
+
+        if (in_array($reportDate, $activePeriod->holidays ?? [], true)) {
+            return response()->json(['message' => 'Cannot submit reports on holidays'], 422);
+        }
+
+        $logbook->update([
+            'period_id' => $activePeriod->id,
+            'report_date' => $reportDate,
+            'done_tasks' => $data['done_tasks'],
+            'next_tasks' => $data['next_tasks'],
+        ]);
+
+        if ($request->hasFile('appendix')) {
+            $logbook->clearMediaCollection('appendix');
+            $logbook->addMediaFromRequest('appendix')->toMediaCollection('appendix');
+        }
+
+        return new LogbookResource($logbook->load(['period', 'user', 'media']));
+    }
+
+    public function destroy(Logbook $logbook): JsonResponse
+    {
+        $logbook->delete();
+
+        return response()->json(status: 204);
     }
 }
