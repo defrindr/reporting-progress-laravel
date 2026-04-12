@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/projects/board', [InternProjectBoardController::class, 'index'])->name('projects.board');
     Route::post('/projects/tasks', [InternProjectBoardController::class, 'storeTask'])->name('projects.tasks.store');
     Route::patch('/projects/{project}/status', [InternProjectBoardController::class, 'setStatus'])->name('projects.status');
+    Route::patch('/projects/{project}/reassign', [InternProjectBoardController::class, 'reassign'])->name('projects.reassign');
     Route::patch('/projects/{project}/advance', [InternProjectBoardController::class, 'advance'])->name('projects.advance');
     Route::post('/projects/{project}/comment', [InternProjectBoardController::class, 'addComment'])->name('projects.comment');
 

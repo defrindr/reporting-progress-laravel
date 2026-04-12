@@ -11,6 +11,8 @@
     $isInternReadOnly = (bool) ($isInternReadOnly ?? false);
     $isWeekendRestriction = (bool) ($isWeekendRestriction ?? false);
     $nextWeekStartDate = $nextWeekStartDate ?? null;
+    $viewMode = $viewMode ?? 'kanban';
+    $filters = $filters ?? [];
 @endphp
 
 @section('content')
@@ -36,7 +38,9 @@
         @endif
 
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <form method="GET" action="{{ route('projects.board') }}" class="grid gap-3 lg:grid-cols-[1fr_auto_auto]">
+            <form method="GET" action="{{ route('projects.board') }}" class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <input type="hidden" name="view_mode" value="{{ $viewMode }}">
+
                 <select name="sprint_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                     <option value="">Pilih Sprint</option>
                     @foreach ($sprints as $sprint)
@@ -45,11 +49,60 @@
                         </option>
                     @endforeach
                 </select>
-                <button type="submit"
-                    class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50">Terapkan
-                    Sprint</button>
-                <a href="{{ route('projects.board') }}"
-                    class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+
+                <select name="project_spec_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="">Semua Project</option>
+                    @foreach ($projectFilters as $projectOption)
+                        <option value="{{ $projectOption->id }}" @selected((int) ($filters['project_spec_id'] ?? 0) === (int) $projectOption->id)>
+                            {{ $projectOption->title }}
+                        </option>
+                    @endforeach
+                </select>
+
+                @if ($isManager)
+                    <select name="assignee_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                        <option value="">Semua Intern</option>
+                        @foreach ($assigneeFilters as $assigneeOption)
+                            <option value="{{ $assigneeOption->id }}" @selected((int) ($filters['assignee_id'] ?? 0) === (int) $assigneeOption->id)>
+                                {{ $assigneeOption->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                @else
+                    <select name="status" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                        <option value="">Semua Status</option>
+                        <option value="todo" @selected(($filters['status'] ?? null) === 'todo')>todo</option>
+                        <option value="doing" @selected(($filters['status'] ?? null) === 'doing')>doing</option>
+                        <option value="done" @selected(($filters['status'] ?? null) === 'done')>done</option>
+                    </select>
+                @endif
+
+                @if ($isManager)
+                    <select name="status" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                        <option value="">Semua Status</option>
+                        <option value="todo" @selected(($filters['status'] ?? null) === 'todo')>todo</option>
+                        <option value="doing" @selected(($filters['status'] ?? null) === 'doing')>doing</option>
+                        <option value="done" @selected(($filters['status'] ?? null) === 'done')>done</option>
+                    </select>
+                @endif
+
+                <label class="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-700">
+                    <input type="checkbox" name="overdue" value="1" class="h-4 w-4 rounded border-slate-300 text-slate-900"
+                        @checked(!empty($filters['overdue']))>
+                    Overdue saja
+                </label>
+
+                <input name="keyword" type="text" value="{{ $filters['keyword'] ?? '' }}"
+                    placeholder="Cari task/deskripsi/project..."
+                    class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm md:col-span-2 xl:col-span-1">
+
+                <div class="flex gap-2 md:col-span-2 xl:col-span-4">
+                    <button type="submit"
+                        class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50">Terapkan
+                        Filter</button>
+                    <a href="{{ route('projects.board') }}"
+                        class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+                </div>
             </form>
 
             @if ($selectedSprint)
@@ -59,12 +112,12 @@
 
                 <div class="mt-3 flex flex-wrap gap-2">
                     @if ($previousSprintId)
-                        <a href="{{ route('projects.board', ['sprint_id' => $previousSprintId]) }}"
+                        <a href="{{ route('projects.board', array_merge(request()->except('page'), ['sprint_id' => $previousSprintId])) }}"
                             class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week
                             Sebelumnya</a>
                     @endif
                     @if ($nextSprintId)
-                        <a href="{{ route('projects.board', ['sprint_id' => $nextSprintId]) }}"
+                        <a href="{{ route('projects.board', array_merge(request()->except('page'), ['sprint_id' => $nextSprintId])) }}"
                             class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week
                             Berikutnya</a>
                     @endif
@@ -73,6 +126,15 @@
                 <p class="mt-3 text-xs text-rose-600">Belum ada sprint tersedia untuk akun ini.</p>
             @endif
         </article>
+
+        @if ($isManager)
+            <nav class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+                <a href="{{ route('projects.board', array_merge(request()->except('page'), ['view_mode' => 'kanban'])) }}"
+                    class="rounded-lg px-4 py-2 text-sm {{ $viewMode === 'kanban' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">Kanban</a>
+                <a href="{{ route('projects.board', array_merge(request()->except('page'), ['view_mode' => 'table'])) }}"
+                    class="rounded-lg px-4 py-2 text-sm {{ $viewMode === 'table' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">Table</a>
+            </nav>
+        @endif
 
         @if (!$isManager)
             <details
@@ -140,7 +202,8 @@
             </details>
         @endif
 
-        <div class="grid gap-4 lg:grid-cols-3" data-kanban-board>
+        @if (!$isManager || $viewMode === 'kanban')
+            <div class="grid gap-4 lg:grid-cols-3" data-kanban-board>
             @foreach ($groups as $status => $label)
                 <article class="kanban-drop-zone rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
                     data-drop-status="{{ $status }}">
@@ -188,6 +251,24 @@
                                     <p class="mt-3 text-xs font-medium text-amber-700">Status dikunci karena akun intern read-only.</p>
                                 @endif
 
+                                @if ($isManager && $project->status === 'todo')
+                                    <form method="POST" action="{{ route('projects.reassign', $project) }}"
+                                        class="mt-3 flex items-center gap-2 text-xs">
+                                        @csrf
+                                        @method('PATCH')
+                                        <select name="assignee_id" class="rounded-lg border border-slate-300 px-2 py-1.5" required>
+                                            @foreach ($assigneeFilters as $assigneeOption)
+                                                <option value="{{ $assigneeOption->id }}" @selected((int) $project->assignee_id === (int) $assigneeOption->id)>
+                                                    {{ $assigneeOption->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <button type="submit"
+                                            class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50">Ubah
+                                            Assignee</button>
+                                    </form>
+                                @endif
+
                                 <div class="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-2.5">
                                     <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">History</p>
                                     <ul class="mt-2 space-y-1 text-xs text-slate-600">
@@ -233,13 +314,14 @@
                     </div>
                 </article>
             @endforeach
-        </div>
+            </div>
+        @endif
 
         <div>
             {{ $tasks->links() }}
         </div>
 
-        @if ($isManager)
+        @if ($isManager && $viewMode === 'table')
             <article class="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 class="mb-3 text-base font-semibold">Tabel Monitoring Task</h2>
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
@@ -253,6 +335,7 @@
                             <th class="px-3 py-2">Priority</th>
                             <th class="px-3 py-2">Status</th>
                             <th class="px-3 py-2">Creator</th>
+                            <th class="px-3 py-2">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -266,10 +349,29 @@
                                 <td class="px-3 py-2">{{ $task->priority }}</td>
                                 <td class="px-3 py-2">{{ $task->status }}</td>
                                 <td class="px-3 py-2">{{ $task->creator?->name ?? '-' }}</td>
+                                <td class="px-3 py-2">
+                                    @if ($task->status === 'todo')
+                                        <form method="POST" action="{{ route('projects.reassign', $task) }}" class="flex items-center gap-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <select name="assignee_id" class="rounded-lg border border-slate-300 px-2 py-1.5 text-xs" required>
+                                                @foreach ($assigneeFilters as $assigneeOption)
+                                                    <option value="{{ $assigneeOption->id }}" @selected((int) $task->assignee_id === (int) $assigneeOption->id)>
+                                                        {{ $assigneeOption->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <button type="submit"
+                                                class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50">Simpan</button>
+                                        </form>
+                                    @else
+                                        <span class="text-xs text-slate-400">Hanya todo</span>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-3 py-6 text-center text-sm text-slate-500">Tidak ada task
+                                <td colspan="9" class="px-3 py-6 text-center text-sm text-slate-500">Tidak ada task
                                     pada sprint ini.</td>
                             </tr>
                         @endforelse

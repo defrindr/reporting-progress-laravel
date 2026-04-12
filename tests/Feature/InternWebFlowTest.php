@@ -219,6 +219,88 @@ class InternWebFlowTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_supervisor_can_reassign_todo_task_and_history_is_recorded(): void
+    {
+        $institution = Institution::create([
+            'name' => 'Kampus Reassign',
+            'type' => 'university',
+        ]);
+
+        $supervisor = User::factory()->create(['institution_id' => $institution->id]);
+        $supervisor->assignRole('Supervisor');
+
+        $internA = User::factory()->create(['institution_id' => $institution->id]);
+        $internA->assignRole('Intern');
+
+        $internB = User::factory()->create(['institution_id' => $institution->id]);
+        $internB->assignRole('Intern');
+
+        $task = Project::create([
+            'title' => 'Task Todo Reassign',
+            'description' => 'Task untuk diuji reassign',
+            'assignee_id' => $internA->id,
+            'created_by' => $supervisor->id,
+            'status' => 'todo',
+        ]);
+
+        $this->actingAs($supervisor)
+            ->from('/projects/board')
+            ->patch('/projects/'.$task->id.'/reassign', [
+                'assignee_id' => $internB->id,
+            ])
+            ->assertRedirect('/projects/board');
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $task->id,
+            'assignee_id' => $internB->id,
+        ]);
+
+        $this->assertDatabaseHas('activity_log', [
+            'subject_type' => Project::class,
+            'subject_id' => $task->id,
+            'event' => 'reassigned',
+            'description' => sprintf('reassign task from %s to %s by %s', $internA->name, $internB->name, $supervisor->name),
+        ]);
+    }
+
+    public function test_supervisor_cannot_reassign_non_todo_task(): void
+    {
+        $institution = Institution::create([
+            'name' => 'Kampus Reassign Locked',
+            'type' => 'university',
+        ]);
+
+        $supervisor = User::factory()->create(['institution_id' => $institution->id]);
+        $supervisor->assignRole('Supervisor');
+
+        $internA = User::factory()->create(['institution_id' => $institution->id]);
+        $internA->assignRole('Intern');
+
+        $internB = User::factory()->create(['institution_id' => $institution->id]);
+        $internB->assignRole('Intern');
+
+        $task = Project::create([
+            'title' => 'Task Doing Reassign',
+            'description' => 'Task doing tidak boleh reassign',
+            'assignee_id' => $internA->id,
+            'created_by' => $supervisor->id,
+            'status' => 'doing',
+        ]);
+
+        $this->actingAs($supervisor)
+            ->from('/projects/board')
+            ->patch('/projects/'.$task->id.'/reassign', [
+                'assignee_id' => $internB->id,
+            ])
+            ->assertRedirect('/projects/board')
+            ->assertSessionHasErrors('assignee_id');
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $task->id,
+            'assignee_id' => $internA->id,
+        ]);
+    }
+
     public function test_intern_can_generate_weekly_resume_from_board_tasks_with_local_ai(): void
     {
         $institution = Institution::create([

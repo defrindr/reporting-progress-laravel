@@ -29,6 +29,24 @@ class InternProjectBoardController extends Controller
         }
 
         $isManager = $user->canManageAllProjects();
+        $viewMode = $request->string('view_mode')->toString();
+        if (! in_array($viewMode, ['kanban', 'table'], true)) {
+            $viewMode = 'kanban';
+        }
+
+        $statusFilter = $request->string('status')->toString();
+        if (! in_array($statusFilter, ['todo', 'doing', 'done'], true)) {
+            $statusFilter = null;
+        }
+
+        $filters = [
+            'project_spec_id' => $request->integer('project_spec_id') > 0 ? $request->integer('project_spec_id') : null,
+            'assignee_id' => $request->integer('assignee_id') > 0 ? $request->integer('assignee_id') : null,
+            'status' => $statusFilter,
+            'overdue' => $request->boolean('overdue'),
+            'keyword' => trim($request->string('keyword')->toString()),
+        ];
+
         $accessState = $isManager ? ['is_read_only' => false, 'reason' => null] : $this->internAccessState($user);
         $isWeekendRestriction = ! $isManager && now()->isWeekend();
         $nextWeekStartDate = now()->startOfWeek(Carbon::MONDAY)->addWeek()->toDateString();
@@ -93,9 +111,33 @@ class InternProjectBoardController extends Controller
                 ->orderBy('project_specs.title')
                 ->get(['project_specs.id', 'project_specs.title']);
 
+        $projectFilters = $isManager
+            ? ProjectSpec::query()->orderBy('title')->get(['id', 'title'])
+            : $availableProjects;
+
+        $assigneeFilters = $isManager
+            ? User::query()->role('Intern')->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         $taskQuery = Project::query()
             ->with(['spec:id,title,specification', 'assignee:id,name', 'creator:id,name', 'sprint:id,name,start_date,end_date', 'comments.user:id,name'])
             ->when(! $isManager, fn ($query) => $query->where('assignee_id', $user->id))
+            ->when($filters['project_spec_id'], fn ($query, $value) => $query->where('project_spec_id', (int) $value))
+            ->when($isManager && $filters['assignee_id'], fn ($query, $value) => $query->where('assignee_id', (int) $value))
+            ->when($filters['status'], fn ($query, $value) => $query->where('status', $value))
+            ->when($filters['overdue'], fn ($query) => $query
+                ->whereDate('due_date', '<', now()->toDateString())
+                ->where('status', '!=', 'done'))
+            ->when($filters['keyword'] !== '', function ($query) use ($filters): void {
+                $keyword = '%'.$filters['keyword'].'%';
+
+                $query->where(function ($innerQuery) use ($keyword): void {
+                    $innerQuery
+                        ->where('title', 'like', $keyword)
+                        ->orWhere('description', 'like', $keyword)
+                        ->orWhereHas('spec', fn ($specQuery) => $specQuery->where('title', 'like', $keyword));
+                });
+            })
             ->orderByDesc('id');
 
         if ($selectedSprint) {
@@ -122,6 +164,10 @@ class InternProjectBoardController extends Controller
             'readOnlyReason' => $accessState['reason'],
             'isWeekendRestriction' => $isWeekendRestriction,
             'nextWeekStartDate' => $nextWeekStartDate,
+            'viewMode' => $viewMode,
+            'filters' => $filters,
+            'projectFilters' => $projectFilters,
+            'assigneeFilters' => $assigneeFilters,
             'sprints' => $sprints,
             'selectedSprint' => $selectedSprint,
             'previousSprintId' => $previousSprintId,
@@ -203,6 +249,85 @@ class InternProjectBoardController extends Controller
         ]);
 
         return back()->with('status', 'Task tambahan berhasil dibuat oleh intern.');
+    }
+
+    public function reassign(Request $request, Project $project): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'assignee_id' => ['required', 'exists:users,id'],
+        ]);
+
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthenticated'], 401);
+            }
+
+            abort(403);
+        }
+
+        if (! $user->canManageAllProjects()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
+            abort(403);
+        }
+
+        if ($project->status !== 'todo') {
+            $message = 'Re-assign hanya bisa dilakukan saat task masih todo.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return back()->withErrors(['assignee_id' => $message]);
+        }
+
+        $newAssignee = User::query()->role('Intern')->find((int) $validated['assignee_id']);
+        if (! $newAssignee) {
+            $message = 'Assignee baru harus user dengan role Intern.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return back()->withErrors(['assignee_id' => $message]);
+        }
+
+        $oldAssigneeId = (int) $project->assignee_id;
+        if ($oldAssigneeId === (int) $newAssignee->id) {
+            return back()->with('status', 'Assignee sudah sama, tidak ada perubahan.');
+        }
+
+        $oldAssigneeName = $project->assignee?->name ?? 'Unknown';
+
+        $project->update([
+            'assignee_id' => (int) $newAssignee->id,
+        ]);
+
+        activity('project')
+            ->performedOn($project)
+            ->causedBy($user)
+            ->event('reassigned')
+            ->withProperties([
+                'old' => ['assignee_id' => $oldAssigneeId],
+                'attributes' => ['assignee_id' => (int) $newAssignee->id],
+            ])
+            ->log(sprintf('reassign task from %s to %s by %s', $oldAssigneeName, $newAssignee->name, $user->name));
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Assignee task berhasil diubah.',
+                'data' => [
+                    'id' => $project->id,
+                    'assignee_id' => $project->assignee_id,
+                ],
+            ]);
+        }
+
+        return back()->with('status', 'Assignee task berhasil diubah.');
     }
 
     public function setStatus(Request $request, Project $project): RedirectResponse|JsonResponse
