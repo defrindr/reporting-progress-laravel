@@ -18,16 +18,51 @@ use Illuminate\View\View;
 
 class AdminProjectController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:255'],
+            'intern_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'sort' => ['nullable', 'string', 'in:title,created_at,backlogs_count'],
+            'direction' => ['nullable', 'string', 'in:asc,desc'],
+        ]);
+
+        $search = trim((string) ($validated['q'] ?? ''));
+        $internId = isset($validated['intern_id']) ? (int) $validated['intern_id'] : null;
+        $sort = (string) ($validated['sort'] ?? 'created_at');
+        $direction = (string) ($validated['direction'] ?? 'desc');
+
+        $specsQuery = ProjectSpec::query()
+            ->with(['assignedInterns:id,name', 'creator:id,name'])
+            ->withCount('backlogs');
+
+        if ($search !== '') {
+            $specsQuery->where(function ($query) use ($search): void {
+                $query
+                    ->where('title', 'like', "%{$search}%")
+                    ->orWhere('specification', 'like', "%{$search}%");
+            });
+        }
+
+        if ($internId) {
+            $specsQuery->whereHas('assignedInterns', static function ($query) use ($internId): void {
+                $query->where('users.id', $internId);
+            });
+        }
+
         return view('admin.projects.index', [
-            'specs' => ProjectSpec::query()
-                ->with(['assignedInterns:id,name', 'creator:id,name'])
-                ->withCount('backlogs')
-                ->latest()
+            'specs' => $specsQuery
+                ->orderBy($sort, $direction)
+                ->orderByDesc('id')
                 ->paginate(12, ['*'], 'spec_page')
                 ->withQueryString(),
             'interns' => User::query()->role('Intern')->orderBy('name')->get(['id', 'name']),
+            'filters' => [
+                'q' => $search,
+                'intern_id' => $internId,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
         ]);
     }
 
@@ -66,18 +101,55 @@ class AdminProjectController extends Controller
 
     public function show(Request $request, ProjectSpec $projectSpec): View
     {
+        $validated = $request->validate([
+            'scope' => ['nullable', 'string', 'in:backlog,sprint,all'],
+            'sprint_id' => ['nullable', 'integer', Rule::exists('periods', 'id')],
+            'q' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'in:todo,doing,done'],
+            'priority' => ['nullable', 'string', 'in:low,medium,high,critical'],
+            'assignee_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
+            'sort' => ['nullable', 'string', 'in:title,due_date,priority,status,created_at'],
+            'direction' => ['nullable', 'string', 'in:asc,desc'],
+        ]);
+
         $activeProjectInterns = $this->projectActiveInterns($projectSpec);
 
-        $scope = $request->string('scope')->toString();
+        $scope = (string) ($validated['scope'] ?? 'backlog');
         if (! in_array($scope, ['backlog', 'sprint', 'all'], true)) {
             $scope = 'backlog';
         }
 
-        $sprintId = $request->integer('sprint_id');
+        $sprintId = isset($validated['sprint_id']) ? (int) $validated['sprint_id'] : 0;
+        $search = trim((string) ($validated['q'] ?? ''));
+        $status = (string) ($validated['status'] ?? '');
+        $priority = (string) ($validated['priority'] ?? '');
+        $assigneeId = isset($validated['assignee_id']) ? (int) $validated['assignee_id'] : null;
+        $sort = (string) ($validated['sort'] ?? 'created_at');
+        $direction = (string) ($validated['direction'] ?? 'desc');
 
         $backlogQuery = Project::query()
             ->with(['assignee:id,name', 'creator:id,name', 'sprint:id,name,start_date,end_date'])
             ->where('project_spec_id', $projectSpec->id);
+
+        if ($search !== '') {
+            $backlogQuery->where(function ($query) use ($search): void {
+                $query
+                    ->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status !== '') {
+            $backlogQuery->where('status', $status);
+        }
+
+        if ($priority !== '') {
+            $backlogQuery->where('priority', $priority);
+        }
+
+        if ($assigneeId) {
+            $backlogQuery->where('assignee_id', $assigneeId);
+        }
 
         if ($scope === 'backlog') {
             $backlogQuery->whereNull('period_id');
@@ -92,6 +164,7 @@ class AdminProjectController extends Controller
         }
 
         $backlogs = $backlogQuery
+            ->orderBy($sort, $direction)
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
@@ -134,6 +207,14 @@ class AdminProjectController extends Controller
             'activeBacklogIds' => $activeBacklogIds,
             'scope' => $scope,
             'sprintId' => $sprintId,
+            'filters' => [
+                'q' => $search,
+                'status' => $status,
+                'priority' => $priority,
+                'assignee_id' => $assigneeId,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
         ]);
     }
 

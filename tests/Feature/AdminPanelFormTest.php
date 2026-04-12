@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Institution;
+use App\Models\GlobalHoliday;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -141,6 +143,67 @@ class AdminPanelFormTest extends TestCase
         $this->assertDatabaseHas('projects', [
             'id' => $task->id,
             'assignee_id' => null,
+        ]);
+    }
+
+    public function test_admin_can_sync_global_holidays_from_two_sources_with_dedup(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('Admin');
+
+        Http::fake([
+            'https://date.nager.at/api/v3/PublicHolidays/2025/ID' => Http::response([
+                [
+                    'date' => '2025-01-01',
+                    'localName' => 'New Year Nager',
+                    'name' => 'New Year',
+                ],
+                [
+                    'date' => '2025-04-18',
+                    'localName' => 'Good Friday',
+                    'name' => 'Good Friday',
+                ],
+            ], 200),
+            'https://libur.deno.dev/api?year=2025' => Http::response([
+                [
+                    'date' => '2025-01-01',
+                    'name' => 'Tahun Baru 2025 Masehi',
+                ],
+                [
+                    'date' => '2025-08-17',
+                    'name' => 'Hari Kemerdekaan Republik Indonesia ke 80',
+                ],
+            ], 200),
+        ]);
+
+        $this->actingAs($admin)
+            ->post('/admin/periods/global-holidays/sync', [
+                'year' => 2025,
+                'country_code' => 'ID',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(3, GlobalHoliday::query()->where('year', 2025)->where('country_code', 'ID')->count());
+
+        $this->assertDatabaseHas('global_holidays', [
+            'holiday_date' => '2025-01-01',
+            'country_code' => 'ID',
+            'name' => 'Tahun Baru 2025 Masehi',
+            'source' => 'libur.deno.dev',
+        ]);
+
+        $this->assertDatabaseHas('global_holidays', [
+            'holiday_date' => '2025-04-18',
+            'country_code' => 'ID',
+            'name' => 'Good Friday',
+            'source' => 'nager',
+        ]);
+
+        $this->assertDatabaseHas('global_holidays', [
+            'holiday_date' => '2025-08-17',
+            'country_code' => 'ID',
+            'name' => 'Hari Kemerdekaan Republik Indonesia ke 80',
+            'source' => 'libur.deno.dev',
         ]);
     }
 

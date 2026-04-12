@@ -11,11 +11,40 @@
             <button type="button" onclick="document.getElementById('create-project-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Project</button>
         </header>
 
+        <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <form method="GET" action="{{ route('admin.projects.index') }}" class="grid gap-3 xl:grid-cols-[1fr_260px_170px_120px_auto_auto]">
+                <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Cari nama/deskripsi project..." class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+
+                <select name="intern_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="">Semua Intern</option>
+                    @foreach ($interns as $intern)
+                        <option value="{{ $intern->id }}" @selected((int) ($filters['intern_id'] ?? 0) === (int) $intern->id)>
+                            {{ $intern->name }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <select name="sort" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="created_at" @selected(($filters['sort'] ?? '') === 'created_at')>Sort: Created</option>
+                    <option value="title" @selected(($filters['sort'] ?? '') === 'title')>Sort: Title</option>
+                    <option value="backlogs_count" @selected(($filters['sort'] ?? '') === 'backlogs_count')>Sort: Backlog Count</option>
+                </select>
+
+                <select name="direction" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="desc" @selected(($filters['direction'] ?? '') === 'desc')>DESC</option>
+                    <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
+                </select>
+
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50">Terapkan</button>
+                <a href="{{ route('admin.projects.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+            </form>
+        </article>
+
         <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-slate-600">
                     <tr>
-                        <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">No</th>
                         <th class="px-4 py-3">Project</th>
                         <th class="px-4 py-3">Backlog Count</th>
                         <th class="px-4 py-3">Aksi</th>
@@ -24,7 +53,7 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($specs as $project)
                         <tr>
-                            <td class="px-4 py-3 align-top">{{ $project->id }}</td>
+                            <td class="px-4 py-3 align-top">{{ ($specs->firstItem() ?? 0) + $loop->index }}</td>
                             <td class="px-4 py-3">
                                 <p class="font-semibold">{{ $project->title }}</p>
                                 <p class="mt-1 line-clamp-2 text-xs text-slate-500">{{ $project->specification }}</p>

@@ -11,11 +11,37 @@
             <button type="button" onclick="document.getElementById('create-institution-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Institution</button>
         </header>
 
+        <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <form method="GET" action="{{ route('admin.institutions.index') }}" class="grid gap-3 lg:grid-cols-[1fr_180px_180px_140px_auto_auto]">
+                <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Cari nama institusi..." class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+
+                <select name="type" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="">Semua Tipe</option>
+                    <option value="university" @selected(($filters['type'] ?? '') === 'university')>University</option>
+                    <option value="vocational" @selected(($filters['type'] ?? '') === 'vocational')>Vocational</option>
+                </select>
+
+                <select name="sort" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="name" @selected(($filters['sort'] ?? '') === 'name')>Sort: Name</option>
+                    <option value="type" @selected(($filters['sort'] ?? '') === 'type')>Sort: Type</option>
+                    <option value="created_at" @selected(($filters['sort'] ?? '') === 'created_at')>Sort: Created</option>
+                </select>
+
+                <select name="direction" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
+                    <option value="desc" @selected(($filters['direction'] ?? '') === 'desc')>DESC</option>
+                </select>
+
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50">Terapkan</button>
+                <a href="{{ route('admin.institutions.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+            </form>
+        </article>
+
         <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-slate-600">
                     <tr>
-                        <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">No</th>
                         <th class="px-4 py-3">Data Institution</th>
                         <th class="px-4 py-3">Aksi</th>
                     </tr>
@@ -23,7 +49,7 @@
                 <tbody class="divide-y divide-slate-100">
                     @foreach ($institutions as $institution)
                         <tr>
-                            <td class="px-4 py-3">{{ $institution->id }}</td>
+                            <td class="px-4 py-3">{{ ($institutions->firstItem() ?? 0) + $loop->index }}</td>
                             <td class="px-4 py-3">
                                 <p class="font-semibold">{{ $institution->name }}</p>
                                 <p class="text-xs uppercase text-slate-500">{{ $institution->type }}</p>

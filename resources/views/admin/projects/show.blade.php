@@ -17,7 +17,7 @@
         </header>
 
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <form method="GET" action="{{ route('admin.projects.show', $project) }}" class="grid gap-3 lg:grid-cols-[180px_1fr_auto]">
+            <form method="GET" action="{{ route('admin.projects.show', $project) }}" class="grid gap-3 xl:grid-cols-[170px_1fr_1fr_170px_170px_200px_170px_120px_auto_auto]">
                 <select name="scope" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                     <option value="backlog" @selected($scope === 'backlog')>Backlog (belum sprint)</option>
                     <option value="sprint" @selected($scope === 'sprint')>Di Sprint</option>
@@ -33,7 +33,47 @@
                     @endforeach
                 </select>
 
+                <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Cari task/backlog..." class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+
+                <select name="status" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="">Semua Status</option>
+                    <option value="todo" @selected(($filters['status'] ?? '') === 'todo')>todo</option>
+                    <option value="doing" @selected(($filters['status'] ?? '') === 'doing')>doing</option>
+                    <option value="done" @selected(($filters['status'] ?? '') === 'done')>done</option>
+                </select>
+
+                <select name="priority" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="">Semua Priority</option>
+                    <option value="low" @selected(($filters['priority'] ?? '') === 'low')>low</option>
+                    <option value="medium" @selected(($filters['priority'] ?? '') === 'medium')>medium</option>
+                    <option value="high" @selected(($filters['priority'] ?? '') === 'high')>high</option>
+                    <option value="critical" @selected(($filters['priority'] ?? '') === 'critical')>critical</option>
+                </select>
+
+                <select name="assignee_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="">Semua Assignee</option>
+                    @foreach ($interns as $intern)
+                        <option value="{{ $intern->id }}" @selected((int) ($filters['assignee_id'] ?? 0) === (int) $intern->id)>
+                            {{ $intern->name }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <select name="sort" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="created_at" @selected(($filters['sort'] ?? '') === 'created_at')>Sort: Created</option>
+                    <option value="title" @selected(($filters['sort'] ?? '') === 'title')>Sort: Title</option>
+                    <option value="due_date" @selected(($filters['sort'] ?? '') === 'due_date')>Sort: Due Date</option>
+                    <option value="priority" @selected(($filters['sort'] ?? '') === 'priority')>Sort: Priority</option>
+                    <option value="status" @selected(($filters['sort'] ?? '') === 'status')>Sort: Status</option>
+                </select>
+
+                <select name="direction" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="desc" @selected(($filters['direction'] ?? '') === 'desc')>DESC</option>
+                    <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
+                </select>
+
                 <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50">Terapkan</button>
+                <a href="{{ route('admin.projects.show', [$project, 'scope' => $scope, 'sprint_id' => $sprintId ?: null]) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
             </form>
         </article>
 
@@ -41,7 +81,7 @@
             <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-slate-600">
                     <tr>
-                        <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">No</th>
                         <th class="px-4 py-3">Task</th>
                         <th class="px-4 py-3">Assign To</th>
                         <th class="px-4 py-3">Due Date</th>
@@ -54,7 +94,7 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($backlogs as $backlog)
                         <tr>
-                            <td class="px-4 py-3">{{ $backlog->id }}</td>
+                            <td class="px-4 py-3">{{ ($backlogs->firstItem() ?? 0) + $loop->index }}</td>
                             <td class="px-4 py-3">
                                 <p class="font-semibold">{{ $backlog->title }}</p>
                                 <p class="text-xs text-slate-500">{{ $backlog->description ?: '-' }}</p>

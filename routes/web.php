@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function (): void {
 
         Route::get('/periods', [AdminPeriodController::class, 'index'])->name('periods.index');
         Route::post('/periods', [AdminPeriodController::class, 'store'])->name('periods.store');
+        Route::post('/periods/global-holidays/sync', [AdminPeriodController::class, 'syncGlobalHolidays'])->name('periods.global-holidays.sync');
         Route::get('/periods/new-users-csv', [AdminPeriodController::class, 'downloadNewUsersCsv'])->name('periods.new-users-csv');
         Route::put('/periods/{period}', [AdminPeriodController::class, 'update'])->name('periods.update');
         Route::delete('/periods/{period}', [AdminPeriodController::class, 'destroy'])->name('periods.destroy');

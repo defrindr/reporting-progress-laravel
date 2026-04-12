@@ -38,7 +38,7 @@
                     <a href="{{ $dashboardRoute }}" class="{{ $sidebarLinkClass($isDashboardActive) }}">Dashboard</a>
 
                     @if ($isAdmin)
-                        <a href="{{ route('admin.dashboard') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.dashboard')) }}">Admin Dashboard</a>
+                        {{-- <a href="{{ route('admin.dashboard') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.dashboard')) }}">Admin Dashboard</a> --}}
                         <a href="{{ route('admin.users.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.users.*')) }}">Users</a>
                         <a href="{{ route('admin.roles.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.roles.*')) }}">Roles</a>
                         <a href="{{ route('admin.institutions.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.institutions.*')) }}">Institutions</a>

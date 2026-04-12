@@ -91,7 +91,9 @@ class Project extends Model
       $userId = Auth::id();
       $user = User::where('id', $userId)->first();
       $userName = $user?->name ?? 'System';
-      if ($user->isAdmin()) return;
+      if ($user?->isAdmin()) {
+        return;
+      }
 
       $activity->description = "new task created by {$userName} on " . date("Y-m-d H:i:s");
     }

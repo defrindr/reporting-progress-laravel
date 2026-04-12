@@ -24,6 +24,48 @@
             <button type="button" onclick="document.getElementById('create-period-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Period</button>
         </header>
 
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-base font-semibold">Global Hari Libur</h2>
+                    <p class="mt-1 text-xs text-slate-500">Sinkronkan tanggal merah dari sumber eksternal sekali per tahun, lalu semua period otomatis mengambil tanggal dalam rentang period.</p>
+                </div>
+
+                <form method="POST" action="{{ route('admin.periods.global-holidays.sync') }}" class="flex flex-wrap items-center gap-2">
+                    @csrf
+                    <input type="number" name="year" min="2000" max="2100" value="{{ $globalHolidayYear }}" class="w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                    <select name="country_code" class="rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        @foreach ($holidayCountries as $code => $name)
+                            <option value="{{ $code }}" @selected($globalHolidayCountry === $code)>{{ $name }}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Sync Tanggal Merah</button>
+                </form>
+            </div>
+
+            <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div class="mb-2 flex items-center justify-between">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Data Global {{ $globalHolidayYear }} ({{ $holidayCountries[$globalHolidayCountry] ?? $globalHolidayCountry }})</p>
+                    <span class="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600">{{ $globalHolidays->count() }} tanggal</span>
+                </div>
+
+                @if ($globalHolidays->isEmpty())
+                    <p class="text-sm text-slate-500">Belum ada data global hari libur untuk tahun ini. Klik tombol sync agar terisi otomatis.</p>
+                @else
+                    <div class="max-h-36 overflow-auto">
+                        <ul class="space-y-1 text-sm text-slate-700">
+                            @foreach ($globalHolidays as $holiday)
+                                <li class="rounded-md bg-white px-2.5 py-1.5">
+                                    <span class="font-medium">{{ optional($holiday->holiday_date)->toDateString() }}</span>
+                                    <span class="text-slate-500">- {{ $holiday->name }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            </div>
+        </article>
+
         @if ($newUserIds->isNotEmpty())
             <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
                 <p>User baru berhasil dibuat. Kamu bisa download daftar akun untuk dibagikan.</p>
@@ -34,11 +76,43 @@
             </article>
         @endif
 
+        <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <form method="GET" action="{{ route('admin.periods.index') }}" class="grid gap-3 xl:grid-cols-[1fr_220px_120px_170px_120px_auto_auto]">
+                <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Cari nama period atau institusi..." class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+
+                <select name="institution_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="">Semua Institusi</option>
+                    @foreach ($institutions as $institution)
+                        <option value="{{ $institution->id }}" @selected((int) ($filters['institution_id'] ?? 0) === (int) $institution->id)>
+                            {{ $institution->name }} ({{ $institution->type }})
+                        </option>
+                    @endforeach
+                </select>
+
+                <input type="number" name="year" min="2000" max="2100" value="{{ $filters['year'] ?? '' }}" placeholder="Tahun" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+
+                <select name="sort" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="start_date" @selected(($filters['sort'] ?? '') === 'start_date')>Sort: Start Date</option>
+                    <option value="end_date" @selected(($filters['sort'] ?? '') === 'end_date')>Sort: End Date</option>
+                    <option value="name" @selected(($filters['sort'] ?? '') === 'name')>Sort: Name</option>
+                    <option value="created_at" @selected(($filters['sort'] ?? '') === 'created_at')>Sort: Created</option>
+                </select>
+
+                <select name="direction" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="desc" @selected(($filters['direction'] ?? '') === 'desc')>DESC</option>
+                    <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
+                </select>
+
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50">Terapkan</button>
+                <a href="{{ route('admin.periods.index', ['holiday_year' => $globalHolidayYear, 'holiday_country' => $globalHolidayCountry]) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+            </form>
+        </article>
+
         <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-slate-600">
                     <tr>
-                        <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">No</th>
                         <th class="px-4 py-3">Data Period</th>
                         <th class="px-4 py-3">Aksi</th>
                     </tr>
@@ -46,7 +120,7 @@
                 <tbody class="divide-y divide-slate-100">
                     @foreach ($periods as $period)
                         <tr>
-                            <td class="px-4 py-3 align-top">{{ $period->id }}</td>
+                            <td class="px-4 py-3 align-top">{{ ($periods->firstItem() ?? 0) + $loop->index }}</td>
                             <td class="px-4 py-3">
                                 <p class="font-semibold">{{ $period->name }}</p>
                                 <p class="text-xs text-slate-500">{{ optional($period->institution)->name ?? '-' }}</p>
@@ -106,7 +180,8 @@
                 <input name="name" type="text" required placeholder="Nama periode" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 <input name="start_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 <input name="end_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                <input name="holidays" type="text" placeholder="2026-01-01,2026-01-02" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
+                <input name="holidays" type="text" placeholder="Tambahan khusus period: 2026-01-03,2026-01-04" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
+                <p class="text-xs text-slate-500 lg:col-span-2">Global holiday otomatis diambil sesuai rentang period. Field ini hanya untuk tambahan libur khusus.</p>
 
                 <div class="space-y-2 lg:col-span-2">
                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">List User Baru (Opsional)</label>
@@ -155,6 +230,7 @@
                 <input id="edit-period-start" name="start_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 <input id="edit-period-end" name="end_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 <input id="edit-period-holidays" name="holidays" type="text" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
+                <p class="text-xs text-slate-500 lg:col-span-2">Kosongkan jika tidak ada tambahan libur khusus (global holiday tetap otomatis dipakai).</p>
             </div>
 
             <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Update</button>

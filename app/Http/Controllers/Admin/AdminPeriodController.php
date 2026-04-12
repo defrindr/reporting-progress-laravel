@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\GlobalHoliday;
 use App\Models\Institution;
 use App\Models\Period;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -20,17 +24,86 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class AdminPeriodController extends Controller
 {
     private const DEFAULT_NEW_USER_PASSWORD = 'password123';
+    private const NAGER_ENDPOINT = 'https://date.nager.at/api/v3/PublicHolidays/%d/%s';
+    private const DENO_LIBUR_ENDPOINT = 'https://libur.deno.dev/api?year=%d';
 
-    public function index(): View
+    /**
+     * @var array<string, string>
+     */
+    private const GLOBAL_HOLIDAY_COUNTRIES = [
+        'ID' => 'Indonesia',
+    ];
+
+    public function index(Request $request): View
     {
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:255'],
+            'institution_id' => ['nullable', 'integer', Rule::exists('institutions', 'id')],
+            'year' => ['nullable', 'integer', 'between:2000,2100'],
+            'sort' => ['nullable', 'string', 'in:name,start_date,end_date,created_at'],
+            'direction' => ['nullable', 'string', 'in:asc,desc'],
+            'holiday_year' => ['nullable', 'integer', 'between:2000,2100'],
+            'holiday_country' => ['nullable', Rule::in(array_keys(self::GLOBAL_HOLIDAY_COUNTRIES))],
+        ]);
+
+        $search = trim((string) ($validated['q'] ?? ''));
+        $institutionId = isset($validated['institution_id']) ? (int) $validated['institution_id'] : null;
+        $year = isset($validated['year']) ? (int) $validated['year'] : null;
+        $sort = (string) ($validated['sort'] ?? 'start_date');
+        $direction = (string) ($validated['direction'] ?? 'desc');
+        $globalHolidayYear = isset($validated['holiday_year']) ? (int) $validated['holiday_year'] : (int) now()->year;
+        $globalHolidayCountry = (string) ($validated['holiday_country'] ?? 'ID');
+
+        $periodsQuery = Period::query()
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->with('institution:id,name,type');
+
+        if ($search !== '') {
+            $periodsQuery->where(function ($query) use ($search): void {
+                $query
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('institution', static function ($institutionQuery) use ($search): void {
+                        $institutionQuery->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($institutionId) {
+            $periodsQuery->where('institution_id', $institutionId);
+        }
+
+        if ($year) {
+            $periodsQuery->where(function ($query) use ($year): void {
+                $query
+                    ->whereYear('start_date', $year)
+                    ->orWhereYear('end_date', $year);
+            });
+        }
+
+        $globalHolidays = GlobalHoliday::query()
+            ->where('year', $globalHolidayYear)
+            ->where('country_code', $globalHolidayCountry)
+            ->orderBy('holiday_date')
+            ->get(['id', 'holiday_date', 'name']);
+
         return view('admin.periods.index', [
-            'periods' => Period::query()
-                ->where('type', Period::TYPE_INTERNSHIP)
-                ->with('institution:id,name,type')
-                ->orderByDesc('start_date')
+            'periods' => $periodsQuery
+                ->orderBy($sort, $direction)
+                ->orderByDesc('id')
                 ->paginate(20)
                 ->withQueryString(),
             'institutions' => Institution::query()->orderBy('name')->get(['id', 'name', 'type']),
+            'filters' => [
+                'q' => $search,
+                'institution_id' => $institutionId,
+                'year' => $year,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
+            'holidayCountries' => self::GLOBAL_HOLIDAY_COUNTRIES,
+            'globalHolidayYear' => $globalHolidayYear,
+            'globalHolidayCountry' => $globalHolidayCountry,
+            'globalHolidays' => $globalHolidays,
         ]);
     }
 
@@ -58,7 +131,11 @@ class AdminPeriodController extends Controller
                 'name' => $validated['name'],
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
-                'holidays' => $this->normalizeHolidays($validated['holidays'] ?? null),
+                'holidays' => $this->resolvePeriodHolidays(
+                    raw: $validated['holidays'] ?? null,
+                    startDate: $validated['start_date'],
+                    endDate: $validated['end_date'],
+                ),
             ]);
 
             $createdUsers = $this->createUsersForInstitution((int) $validated['institution_id'], $newUsers);
@@ -125,6 +202,154 @@ class AdminPeriodController extends Controller
         ]);
     }
 
+    public function syncGlobalHolidays(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'year' => ['required', 'integer', 'between:2000,2100'],
+            'country_code' => ['required', Rule::in(array_keys(self::GLOBAL_HOLIDAY_COUNTRIES))],
+        ]);
+
+        $year = (int) $validated['year'];
+        $countryCode = strtoupper((string) $validated['country_code']);
+
+        [$nagerRows, $nagerOk] = $this->fetchNagerHolidays($year, $countryCode);
+        [$denoRows, $denoOk] = $this->fetchLiburDenoHolidays($year, $countryCode);
+
+        if (! $nagerOk && ! $denoOk) {
+            return back()->withErrors([
+                'global_holidays' => 'Gagal mengambil data hari libur dari dua sumber eksternal (Nager + libur.deno.dev). Coba lagi sebentar.',
+            ]);
+        }
+
+        // Deduplicate by date and prefer libur.deno.dev labels for Indonesia when available.
+        $rowsByDate = collect();
+        foreach ($nagerRows as $row) {
+            $rowsByDate->put($row['holiday_date'], $row);
+        }
+        foreach ($denoRows as $row) {
+            $rowsByDate->put($row['holiday_date'], $row);
+        }
+
+        $payload = $rowsByDate
+            ->sortKeys()
+            ->values()
+            ->all();
+
+        DB::transaction(function () use ($countryCode, $year, $payload): void {
+            GlobalHoliday::query()
+                ->where('country_code', $countryCode)
+                ->where('year', $year)
+                ->delete();
+
+            if ($payload !== []) {
+                GlobalHoliday::query()->insert($payload);
+            }
+        });
+
+        return redirect()
+            ->route('admin.periods.index', [
+                'holiday_year' => $year,
+                'holiday_country' => $countryCode,
+            ])
+            ->with('status', 'Global hari libur berhasil disinkronkan: '.count($payload).' tanggal (Nager: '.count($nagerRows).', libur.deno.dev: '.count($denoRows).').');
+    }
+
+    /**
+     * @return array{0: array<int, array{holiday_date: string, name: string, country_code: string, year: int, source: string, created_at: \Illuminate\Support\Carbon, updated_at: \Illuminate\Support\Carbon}>, 1: bool}
+     */
+    private function fetchNagerHolidays(int $year, string $countryCode): array
+    {
+        try {
+            $response = Http::timeout(20)
+                ->acceptJson()
+                ->get(sprintf(self::NAGER_ENDPOINT, $year, $countryCode));
+
+            if (! $response->successful()) {
+                return [[], false];
+            }
+
+            $rows = collect($response->json())
+                ->filter(static fn ($item): bool => is_array($item) && filled($item['date'] ?? null))
+                ->map(static function (array $item) use ($countryCode, $year): array {
+                    $holidayDate = Carbon::parse((string) $item['date'])->toDateString();
+
+                    return [
+                        'holiday_date' => $holidayDate,
+                        'name' => trim((string) ($item['localName'] ?? $item['name'] ?? 'Hari Libur')),
+                        'country_code' => $countryCode,
+                        'year' => $year,
+                        'source' => 'nager',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                })
+                ->keyBy('holiday_date')
+                ->sortKeys()
+                ->values()
+                ->all();
+
+            return [$rows, true];
+        } catch (\Throwable $exception) {
+            Log::warning('Nager holiday sync failed.', [
+                'year' => $year,
+                'country_code' => $countryCode,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return [[], false];
+        }
+    }
+
+    /**
+     * @return array{0: array<int, array{holiday_date: string, name: string, country_code: string, year: int, source: string, created_at: \Illuminate\Support\Carbon, updated_at: \Illuminate\Support\Carbon}>, 1: bool}
+     */
+    private function fetchLiburDenoHolidays(int $year, string $countryCode): array
+    {
+        if ($countryCode !== 'ID') {
+            return [[], true];
+        }
+
+        try {
+            $response = Http::timeout(20)
+                ->acceptJson()
+                ->get(sprintf(self::DENO_LIBUR_ENDPOINT, $year));
+
+            if (! $response->successful()) {
+                return [[], false];
+            }
+
+            $rows = collect($response->json())
+                ->filter(static fn ($item): bool => is_array($item) && filled($item['date'] ?? null))
+                ->map(static function (array $item) use ($countryCode, $year): array {
+                    $holidayDate = Carbon::parse((string) $item['date'])->toDateString();
+
+                    return [
+                        'holiday_date' => $holidayDate,
+                        'name' => trim((string) ($item['name'] ?? 'Hari Libur')),
+                        'country_code' => $countryCode,
+                        'year' => $year,
+                        'source' => 'libur.deno.dev',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                })
+                ->keyBy('holiday_date')
+                ->sortKeys()
+                ->values()
+                ->all();
+
+            return [$rows, true];
+        } catch (\Throwable $exception) {
+            Log::warning('libur.deno.dev holiday sync failed.', [
+                'year' => $year,
+                'country_code' => $countryCode,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return [[], false];
+        }
+    }
+
     public function update(Request $request, Period $period): RedirectResponse
     {
         if ($period->type === Period::TYPE_SPRINT) {
@@ -145,7 +370,11 @@ class AdminPeriodController extends Controller
             'name' => $validated['name'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
-            'holidays' => $this->normalizeHolidays($validated['holidays'] ?? null),
+            'holidays' => $this->resolvePeriodHolidays(
+                raw: $validated['holidays'] ?? null,
+                startDate: $validated['start_date'],
+                endDate: $validated['end_date'],
+            ),
         ]);
 
         return back()->with('status', 'Periode berhasil diubah.');
@@ -174,6 +403,38 @@ class AdminPeriodController extends Controller
         return collect(explode(',', $raw))
             ->map(fn (string $date): string => trim($date))
             ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolvePeriodHolidays(?string $raw, string $startDate, string $endDate): array
+    {
+        $manualHolidays = $this->normalizeHolidays($raw);
+        $globalHolidays = $this->globalHolidayDatesForRange($startDate, $endDate);
+
+        return collect([...$globalHolidays, ...$manualHolidays])
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function globalHolidayDatesForRange(string $startDate, string $endDate): array
+    {
+        return GlobalHoliday::query()
+            ->whereBetween('holiday_date', [
+                Carbon::parse($startDate)->toDateString(),
+                Carbon::parse($endDate)->toDateString(),
+            ])
+            ->orderBy('holiday_date')
+            ->pluck('holiday_date')
+            ->map(static fn ($date): string => Carbon::parse((string) $date)->toDateString())
             ->unique()
             ->values()
             ->all();

@@ -11,19 +11,55 @@
             <button type="button" onclick="document.getElementById('create-user-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah User</button>
         </header>
 
+        <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <form method="GET" action="{{ route('admin.users.index') }}" class="grid gap-3 xl:grid-cols-[1.2fr_180px_220px_170px_120px_auto_auto]">
+                <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Cari nama atau email user..." class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+
+                <select name="role" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="">Semua Role</option>
+                    @foreach ($roles as $role)
+                        <option value="{{ $role->name }}" @selected(($filters['role'] ?? '') === $role->name)>{{ $role->name }}</option>
+                    @endforeach
+                </select>
+
+                <select name="institution_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="">Semua Institution</option>
+                    @foreach ($institutions as $institution)
+                        <option value="{{ $institution->id }}" @selected((int) ($filters['institution_id'] ?? 0) === (int) $institution->id)>
+                            {{ $institution->name }} ({{ $institution->type }})
+                        </option>
+                    @endforeach
+                </select>
+
+                <select name="sort" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="created_at" @selected(($filters['sort'] ?? '') === 'created_at')>Sort: Created</option>
+                    <option value="name" @selected(($filters['sort'] ?? '') === 'name')>Sort: Name</option>
+                    <option value="email" @selected(($filters['sort'] ?? '') === 'email')>Sort: Email</option>
+                </select>
+
+                <select name="direction" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="desc" @selected(($filters['direction'] ?? '') === 'desc')>DESC</option>
+                    <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
+                </select>
+
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50">Terapkan</button>
+                <a href="{{ route('admin.users.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+            </form>
+        </article>
+
         <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
                 <thead class="bg-slate-50 text-left text-slate-600">
                     <tr>
-                        <th class="px-4 py-3">ID</th>
+                        <th class="px-4 py-3">No</th>
                         <th class="px-4 py-3">Data User</th>
                         <th class="px-4 py-3">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    @foreach ($users as $user)
+                    @forelse ($users as $user)
                         <tr>
-                            <td class="px-4 py-3 align-top">{{ $user->id }}</td>
+                            <td class="px-4 py-3 align-top">{{ ($users->firstItem() ?? 0) + $loop->index }}</td>
                             <td class="px-4 py-3">
                                 <p class="font-semibold">{{ $user->name }}</p>
                                 <p class="text-xs text-slate-500">{{ $user->email }}</p>
@@ -52,7 +88,11 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="3" class="px-4 py-6 text-center text-sm text-slate-500">Tidak ada user ditemukan.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

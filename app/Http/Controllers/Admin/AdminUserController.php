@@ -12,17 +12,62 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
 class AdminUserController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:255'],
+            'role' => ['nullable', 'string', Rule::exists('roles', 'name')],
+            'institution_id' => ['nullable', 'integer', Rule::exists('institutions', 'id')],
+            'sort' => ['nullable', 'string', 'in:name,email,created_at'],
+            'direction' => ['nullable', 'string', 'in:asc,desc'],
+        ]);
+
+        $search = trim((string) ($validated['q'] ?? ''));
+        $role = (string) ($validated['role'] ?? '');
+        $institutionId = isset($validated['institution_id']) ? (int) $validated['institution_id'] : null;
+        $sort = (string) ($validated['sort'] ?? 'created_at');
+        $direction = (string) ($validated['direction'] ?? 'desc');
+
+        $usersQuery = User::query()->with(['roles', 'institution:id,name']);
+
+        if ($search !== '') {
+            $usersQuery->where(function ($query) use ($search): void {
+                $query
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($role !== '') {
+            $usersQuery->whereHas('roles', static function ($query) use ($role): void {
+                $query->where('name', $role);
+            });
+        }
+
+        if ($institutionId) {
+            $usersQuery->where('institution_id', $institutionId);
+        }
+
         return view('admin.users.index', [
-            'users' => User::query()->with(['roles', 'institution:id,name'])->orderByDesc('id')->paginate(20)->withQueryString(),
+            'users' => $usersQuery
+                ->orderBy($sort, $direction)
+                ->paginate(20)
+                ->withQueryString(),
             'roles' => Role::query()->orderBy('name')->get(),
             'institutions' => Institution::query()->orderBy('name')->get(),
+            'filters' => [
+                'q' => $search,
+                'role' => $role,
+                'institution_id' => $institutionId,
+                'sort' => $sort,
+                'direction' => $direction,
+            ],
         ]);
     }
 
