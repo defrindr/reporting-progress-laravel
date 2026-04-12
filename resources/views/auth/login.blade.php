@@ -4,9 +4,37 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login - Internship Logbook</title>
+    <script>
+        (function () {
+            try {
+                const key = 'internship-theme';
+                const stored = localStorage.getItem(key);
+                const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = stored === 'dark' || stored === 'light'
+                    ? stored
+                    : (systemPrefersDark ? 'dark' : 'light');
+
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (error) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
+    <div class="fixed right-4 top-4 z-40">
+        <button
+            type="button"
+            data-theme-toggle
+            class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+        >
+            <span data-theme-label>Dark Mode</span>
+        </button>
+    </div>
+
     <div class="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10 sm:px-6 lg:px-8">
         <div class="grid w-full overflow-hidden rounded-3xl bg-white shadow-xl lg:grid-cols-2">
             <section class="relative hidden bg-slate-900 p-10 text-white lg:block">

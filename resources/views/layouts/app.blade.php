@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Internship Logbook' }}</title>
+    <script>
+        (function () {
+            try {
+                const key = 'internship-theme';
+                const stored = localStorage.getItem(key);
+                const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = stored === 'dark' || stored === 'light'
+                    ? stored
+                    : (systemPrefersDark ? 'dark' : 'light');
+
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            } catch (error) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
+            }
+        })();
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="text-slate-900">
@@ -76,8 +94,18 @@
                             </div>
                         </div>
 
-                        <div class="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 sm:block">
-                            {{ $isManager ? 'Mode Monitoring' : 'Mode Operasional' }}
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                data-theme-toggle
+                                class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                            >
+                                <span data-theme-label>Dark Mode</span>
+                            </button>
+
+                            <div class="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 sm:block">
+                                {{ $isManager ? 'Mode Monitoring' : 'Mode Operasional' }}
+                            </div>
                         </div>
                     </div>
                 </header>
