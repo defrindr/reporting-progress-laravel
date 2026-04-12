@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Institution;
+use App\Models\Period;
 use App\Models\User;
+use App\Support\SprintWindow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -59,5 +63,39 @@ class LoginFlowTest extends TestCase
             ->assertSessionHasErrors('email');
 
         $this->assertGuest();
+    }
+
+    public function test_login_auto_creates_sprint_for_user_institution(): void
+    {
+        Carbon::setTestNow('2026-04-12 09:00:00');
+
+        $institution = Institution::create([
+            'name' => 'SMKN Login Sprint',
+            'type' => 'university',
+        ]);
+
+        $user = User::factory()->create([
+            'email' => 'autosprint@example.com',
+            'password' => Hash::make('password123'),
+            'institution_id' => $institution->id,
+        ]);
+
+        [$startDate, $endDate] = SprintWindow::resolveRange(Carbon::now(), true);
+
+        $this->post('/login', [
+            'email' => 'autosprint@example.com',
+            'password' => 'password123',
+        ])->assertRedirect('/dashboard');
+
+        $this->assertAuthenticatedAs($user);
+
+        $this->assertDatabaseHas('periods', [
+            'institution_id' => $institution->id,
+            'type' => Period::TYPE_SPRINT,
+            'start_date' => $startDate->toDateString().' 00:00:00',
+            'end_date' => $endDate->toDateString().' 00:00:00',
+        ]);
+
+        Carbon::setTestNow();
     }
 }

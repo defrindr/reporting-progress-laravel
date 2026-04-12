@@ -15,7 +15,12 @@ class AdminPeriodController extends Controller
     public function index(): View
     {
         return view('admin.periods.index', [
-            'periods' => Period::query()->with('institution:id,name,type')->orderByDesc('start_date')->paginate(20)->withQueryString(),
+            'periods' => Period::query()
+                ->where('type', Period::TYPE_INTERNSHIP)
+                ->with('institution:id,name,type')
+                ->orderByDesc('start_date')
+                ->paginate(20)
+                ->withQueryString(),
             'institutions' => Institution::query()->orderBy('name')->get(['id', 'name', 'type']),
         ]);
     }
@@ -24,7 +29,6 @@ class AdminPeriodController extends Controller
     {
         $validated = $request->validate([
             'institution_id' => ['required', Rule::exists('institutions', 'id')],
-            'type' => ['nullable', Rule::in([Period::TYPE_INTERNSHIP, Period::TYPE_SPRINT])],
             'name' => ['required', 'string', 'max:255'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
@@ -33,7 +37,7 @@ class AdminPeriodController extends Controller
 
         Period::create([
             'institution_id' => (int) $validated['institution_id'],
-            'type' => $validated['type'] ?? Period::TYPE_INTERNSHIP,
+            'type' => Period::TYPE_INTERNSHIP,
             'name' => $validated['name'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
@@ -45,9 +49,12 @@ class AdminPeriodController extends Controller
 
     public function update(Request $request, Period $period): RedirectResponse
     {
+        if ($period->type === Period::TYPE_SPRINT) {
+            return back()->withErrors(['period' => 'Period sprint dikelola otomatis dari aktivasi project.']);
+        }
+
         $validated = $request->validate([
             'institution_id' => ['required', Rule::exists('institutions', 'id')],
-            'type' => ['nullable', Rule::in([Period::TYPE_INTERNSHIP, Period::TYPE_SPRINT])],
             'name' => ['required', 'string', 'max:255'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
@@ -56,7 +63,7 @@ class AdminPeriodController extends Controller
 
         $period->update([
             'institution_id' => (int) $validated['institution_id'],
-            'type' => $validated['type'] ?? Period::TYPE_INTERNSHIP,
+            'type' => Period::TYPE_INTERNSHIP,
             'name' => $validated['name'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
@@ -68,6 +75,10 @@ class AdminPeriodController extends Controller
 
     public function destroy(Period $period): RedirectResponse
     {
+        if ($period->type === Period::TYPE_SPRINT) {
+            return back()->withErrors(['period' => 'Period sprint dikelola otomatis dari aktivasi project.']);
+        }
+
         $period->delete();
 
         return back()->with('status', 'Periode berhasil dihapus.');

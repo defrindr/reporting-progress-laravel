@@ -17,7 +17,7 @@
         </header>
 
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <form method="GET" action="{{ route('admin.projects.show', $project) }}" class="grid gap-3 lg:grid-cols-[180px_1fr_1fr_auto]">
+            <form method="GET" action="{{ route('admin.projects.show', $project) }}" class="grid gap-3 lg:grid-cols-[180px_1fr_auto]">
                 <select name="scope" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                     <option value="backlog" @selected($scope === 'backlog')>Backlog (belum sprint)</option>
                     <option value="sprint" @selected($scope === 'sprint')>Di Sprint</option>
@@ -28,15 +28,6 @@
                     <option value="">Semua Sprint</option>
                     @foreach ($periods as $period)
                         <option value="{{ $period->id }}" @selected($sprintId === $period->id)>
-                            {{ $period->name }} ({{ $period->institution?->name ?? '-' }})
-                        </option>
-                    @endforeach
-                </select>
-
-                <select name="activation_period_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    <option value="">Prefill Aktivasi Sprint (opsional)</option>
-                    @foreach ($periods as $period)
-                        <option value="{{ $period->id }}" @selected($activationPeriodId === $period->id)>
                             {{ $period->name }} ({{ $period->institution?->name ?? '-' }})
                         </option>
                     @endforeach
@@ -113,21 +104,27 @@
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <header class="mb-3">
                 <h2 class="text-lg font-semibold">Aktifkan Sprint</h2>
-                <p class="text-sm text-slate-500">Pilih sprint (period) dan backlog yang akan dinaikkan ke sprint tersebut.</p>
+                <p class="text-sm text-slate-500">Pilih backlog yang akan dinaikkan ke sprint otomatis (sprint aktif saat ini). Jika belum ada sprint aktif, sistem membuat sprint minggu ini.</p>
             </header>
+
+            @if ($activationError)
+                <div class="mb-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                    {{ $activationError }}
+                </div>
+            @elseif ($activationSprint)
+                <div class="mb-4 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                    Sprint target otomatis: <span class="font-semibold">{{ $activationSprint->name }}</span>
+                    ({{ optional($activationSprint->start_date)->toDateString() }} - {{ optional($activationSprint->end_date)->toDateString() }})
+                </div>
+            @else
+                <div class="mb-4 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    Belum ada sprint aktif. Sistem akan membuat sprint minggu ini saat tombol aktivasi dijalankan.
+                </div>
+            @endif
 
             <form method="POST" action="{{ route('admin.projects.activate-sprint', $project) }}" class="space-y-4">
                 @csrf
                 @method('PATCH')
-
-                <select name="period_id" required class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    <option value="">Pilih Sprint (Period)</option>
-                    @foreach ($periods as $period)
-                        <option value="{{ $period->id }}" @selected($activationPeriodId === $period->id)>
-                            {{ $period->name }} ({{ $period->institution?->name ?? '-' }})
-                        </option>
-                    @endforeach
-                </select>
 
                 <div class="max-h-72 space-y-2 overflow-auto rounded-xl border border-slate-200 p-3">
                     @forelse ($activationCandidates as $candidate)
@@ -144,7 +141,7 @@
                     @endforelse
                 </div>
 
-                <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Aktifkan Sprint</button>
+                <button type="submit" @disabled($activationError) class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400">Aktifkan Sprint</button>
             </form>
         </article>
     </section>

@@ -43,8 +43,8 @@ class AdminProjectBacklogFlowTest extends TestCase
             'institution_id' => $institution->id,
             'type' => Period::TYPE_SPRINT,
             'name' => 'Sprint 1',
-            'start_date' => '2026-01-01',
-            'end_date' => '2026-01-31',
+            'start_date' => now()->copy()->subDay()->toDateString(),
+            'end_date' => now()->copy()->addDays(6)->toDateString(),
         ]);
 
         $this->actingAs($admin)
@@ -86,14 +86,22 @@ class AdminProjectBacklogFlowTest extends TestCase
 
         $this->actingAs($admin)
             ->patch("/admin/projects/{$project->id}/activate-sprint", [
-                'period_id' => $period->id,
                 'backlog_ids' => [$backlogA->id],
             ])
             ->assertRedirect();
 
+        $backlogA->refresh();
+        $this->assertNotNull($backlogA->period_id);
+
+        $this->assertDatabaseHas('periods', [
+            'id' => $backlogA->period_id,
+            'institution_id' => $institution->id,
+            'type' => Period::TYPE_SPRINT,
+        ]);
+
         $this->assertDatabaseHas('projects', [
             'id' => $backlogA->id,
-            'period_id' => $period->id,
+            'period_id' => $backlogA->period_id,
         ]);
 
         $this->assertDatabaseHas('projects', [
@@ -103,7 +111,6 @@ class AdminProjectBacklogFlowTest extends TestCase
 
         $this->actingAs($admin)
             ->patch("/admin/projects/{$project->id}/activate-sprint", [
-                'period_id' => $period->id,
                 'backlog_ids' => [$backlogB->id],
             ])
             ->assertRedirect();
@@ -113,9 +120,10 @@ class AdminProjectBacklogFlowTest extends TestCase
             'period_id' => null,
         ]);
 
+        $backlogB->refresh();
         $this->assertDatabaseHas('projects', [
             'id' => $backlogB->id,
-            'period_id' => $period->id,
+            'period_id' => $backlogA->period_id,
         ]);
     }
 }

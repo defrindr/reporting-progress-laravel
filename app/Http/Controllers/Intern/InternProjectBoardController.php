@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Period;
 use App\Models\Project;
 use App\Models\ProjectSpec;
+use App\Support\SprintWindow;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -41,6 +42,15 @@ class InternProjectBoardController extends Controller
 
         $selectedSprintId = $request->integer('sprint_id');
         $selectedSprint = $sprints->firstWhere('id', $selectedSprintId);
+
+        if (! $selectedSprint) {
+            [$targetStart, $targetEnd] = SprintWindow::resolveRange(Carbon::now(), true);
+
+            $selectedSprint = $sprints->first(function (Period $period) use ($targetStart, $targetEnd): bool {
+                return optional($period->start_date)->toDateString() === $targetStart->toDateString()
+                    && optional($period->end_date)->toDateString() === $targetEnd->toDateString();
+            });
+        }
 
         if (! $selectedSprint) {
             $selectedSprint = $sprints->first(function (Period $period): bool {

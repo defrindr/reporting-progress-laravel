@@ -5,7 +5,7 @@
         <header class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-semibold tracking-tight">CRUD Periods</h1>
-                <p class="text-sm text-slate-500">Pisahkan period magang dan period sprint mingguan per institusi (universitas/sekolah). Format holidays: YYYY-MM-DD dipisah koma.</p>
+                <p class="text-sm text-slate-500">Kelola period magang per institusi. Period sprint dibuat otomatis dari aktivasi sprint di halaman project detail.</p>
             </div>
 
             <button type="button" onclick="document.getElementById('create-period-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Period</button>
@@ -26,7 +26,6 @@
                             <td class="px-4 py-3 align-top">{{ $period->id }}</td>
                             <td class="px-4 py-3">
                                 <p class="font-semibold">{{ $period->name }}</p>
-                                <p class="text-xs text-slate-500">Type: {{ $period->type }}</p>
                                 <p class="text-xs text-slate-500">{{ optional($period->institution)->name ?? '-' }}</p>
                                 <p class="text-xs text-slate-500">{{ optional($period->start_date)->toDateString() }} - {{ optional($period->end_date)->toDateString() }}</p>
                                 <p class="mt-1 text-xs text-slate-500">Holidays: {{ implode(',', $period->holidays ?? []) ?: '-' }}</p>
@@ -38,7 +37,6 @@
                                         class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50"
                                         data-edit-action="{{ route('admin.periods.update', $period) }}"
                                         data-institution-id="{{ $period->institution_id ?? '' }}"
-                                        data-type="{{ $period->type }}"
                                         data-name="{{ $period->name }}"
                                         data-start="{{ optional($period->start_date)->toDateString() }}"
                                         data-end="{{ optional($period->end_date)->toDateString() }}"
@@ -82,11 +80,6 @@
                     @endforeach
                 </select>
 
-                <select name="type" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    <option value="internship" selected>internship</option>
-                    <option value="sprint">sprint</option>
-                </select>
-
                 <input name="name" type="text" required placeholder="Nama periode" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 <input name="start_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 <input name="end_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
@@ -114,11 +107,6 @@
                     @endforeach
                 </select>
 
-                <select id="edit-period-type" name="type" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    <option value="internship">internship</option>
-                    <option value="sprint">sprint</option>
-                </select>
-
                 <input id="edit-period-name" name="name" type="text" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 <input id="edit-period-start" name="start_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 <input id="edit-period-end" name="end_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
@@ -133,7 +121,6 @@
         function openEditPeriodModal(button) {
             document.getElementById('edit-period-form').action = button.dataset.editAction;
             document.getElementById('edit-period-institution').value = button.dataset.institutionId || '';
-            document.getElementById('edit-period-type').value = button.dataset.type || 'internship';
             document.getElementById('edit-period-name').value = button.dataset.name || '';
             document.getElementById('edit-period-start').value = button.dataset.start || '';
             document.getElementById('edit-period-end').value = button.dataset.end || '';

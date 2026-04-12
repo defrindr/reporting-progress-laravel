@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Period;
+use App\Models\User;
+use App\Support\SprintWindow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -29,6 +33,24 @@ class AuthSessionController extends Controller
         }
 
         $request->session()->regenerate();
+
+        $user = Auth::user();
+        if ($user instanceof User && $user->institution_id) {
+            [$startDate, $endDate] = SprintWindow::resolveRange(Carbon::now(), true);
+
+            Period::query()->firstOrCreate(
+                [
+                    'institution_id' => (int) $user->institution_id,
+                    'type' => Period::TYPE_SPRINT,
+                    'start_date' => $startDate->toDateString(),
+                    'end_date' => $endDate->toDateString(),
+                ],
+                [
+                    'name' => SprintWindow::formatName($startDate, $endDate),
+                    'holidays' => [],
+                ]
+            );
+        }
 
         return redirect()->intended(route('dashboard'));
     }
