@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Institution;
 use App\Models\Period;
 use App\Models\Project;
+use App\Models\ProjectSpec;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -137,5 +138,55 @@ class InternWebFlowTest extends TestCase
         $this->actingAs($intern)
             ->patch('/projects/'.$foreignProject->id.'/advance')
             ->assertStatus(403);
+    }
+
+    public function test_intern_can_create_self_task_with_project_and_due_date(): void
+    {
+        $institution = Institution::create([
+            'name' => 'Kampus Sprint',
+            'type' => 'university',
+        ]);
+
+        $admin = User::factory()->create(['institution_id' => $institution->id]);
+        $admin->assignRole('Admin');
+
+        $intern = User::factory()->create(['institution_id' => $institution->id]);
+        $intern->assignRole('Intern');
+
+        $project = ProjectSpec::create([
+            'title' => 'rencanain.id',
+            'specification' => 'Project test intern create task',
+            'created_by' => $admin->id,
+        ]);
+        $project->assignedInterns()->sync([$intern->id]);
+
+        $sprint = Period::create([
+            'institution_id' => $institution->id,
+            'type' => Period::TYPE_SPRINT,
+            'name' => 'Sprint Week 4',
+            'start_date' => '2027-04-23',
+            'end_date' => '2027-04-30',
+            'holidays' => [],
+        ]);
+
+        $this->actingAs($intern)
+            ->post('/projects/tasks', [
+                'project_spec_id' => $project->id,
+                'title' => 'Task Tambahan Intern',
+                'description' => 'Task detail tambahan',
+                'due_date' => '2027-04-29',
+                'priority' => 'high',
+                'sprint_id' => $sprint->id,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('projects', [
+            'project_spec_id' => $project->id,
+            'title' => 'Task Tambahan Intern',
+            'assignee_id' => $intern->id,
+            'created_by' => $intern->id,
+            'due_date' => '2027-04-29 00:00:00',
+            'period_id' => $sprint->id,
+        ]);
     }
 }

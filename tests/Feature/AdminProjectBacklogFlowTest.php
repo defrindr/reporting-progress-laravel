@@ -41,6 +41,7 @@ class AdminProjectBacklogFlowTest extends TestCase
 
         $period = Period::query()->create([
             'institution_id' => $institution->id,
+            'type' => Period::TYPE_SPRINT,
             'name' => 'Sprint 1',
             'start_date' => '2026-01-01',
             'end_date' => '2026-01-31',

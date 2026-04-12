@@ -53,9 +53,18 @@ class LargeDatasetSeeder extends Seeder
             'vocationals' => $this->envInt('SEED_BULK_VOCATIONALS', self::DEFAULT_VOCATIONAL_COUNT),
             'supervisors' => $this->envInt('SEED_BULK_SUPERVISORS', self::DEFAULT_SUPERVISOR_COUNT),
             'interns' => $this->envInt('SEED_BULK_INTERNS', self::DEFAULT_INTERN_COUNT),
-            'specs' => $this->envInt('SEED_BULK_PROJECT_SPECS', self::DEFAULT_PROJECT_SPEC_COUNT),
-            'assignments_per_spec' => $this->envInt('SEED_BULK_ASSIGNMENTS_PER_SPEC', self::DEFAULT_ASSIGNMENTS_PER_SPEC),
-            'tasks' => $this->envInt('SEED_BULK_TASKS', self::DEFAULT_TASK_COUNT),
+            'projects' => $this->envInt(
+                'SEED_BULK_PROJECTS',
+                $this->envInt('SEED_BULK_PROJECT_SPECS', self::DEFAULT_PROJECT_SPEC_COUNT)
+            ),
+            'assignments_per_project' => $this->envInt(
+                'SEED_BULK_ASSIGNMENTS_PER_PROJECT',
+                $this->envInt('SEED_BULK_ASSIGNMENTS_PER_SPEC', self::DEFAULT_ASSIGNMENTS_PER_SPEC)
+            ),
+            'backlogs' => $this->envInt(
+                'SEED_BULK_BACKLOGS',
+                $this->envInt('SEED_BULK_TASKS', self::DEFAULT_TASK_COUNT)
+            ),
             'logbooks' => $this->envInt('SEED_BULK_LOGBOOKS', self::DEFAULT_LOGBOOK_COUNT),
             'comments' => $this->envInt('SEED_BULK_COMMENTS', self::DEFAULT_COMMENT_COUNT),
         ];
@@ -92,22 +101,31 @@ class LargeDatasetSeeder extends Seeder
 
         [$specIds, $assignedInternBySpec] = $this->seedProjectSpecsAndAssignments(
             tag: $tag,
-            specCount: $counts['specs'],
-            assignmentsPerSpec: $counts['assignments_per_spec'],
+            specCount: $counts['projects'],
+            assignmentsPerSpec: $counts['assignments_per_project'],
             creatorIds: array_values(array_unique(array_merge([$adminId], $supervisorIds))),
             internIds: $internIds,
             now: $now,
         );
-        $this->command?->line('- project specs seeded');
+        $this->command?->line('- projects seeded');
 
-        $taskIds = $this->seedTasks(
+        $internInstitutionById = [];
+        foreach ($internRows as $internRow) {
+            $internInstitutionById[$internRow['id']] = $internRow['institution_id'];
+        }
+
+        $periodIdsByInstitution = $this->periodIdsByInstitution($tag);
+
+        $taskIds = $this->seedBacklogs(
             tag: $tag,
-            taskCount: $counts['tasks'],
+            backlogCount: $counts['backlogs'],
             specIds: $specIds,
             assignedInternBySpec: $assignedInternBySpec,
             internIds: $internIds,
+            internInstitutionById: $internInstitutionById,
+            periodIdsByInstitution: $periodIdsByInstitution,
         );
-        $this->command?->line('- tasks seeded');
+        $this->command?->line('- backlogs seeded');
 
         $this->seedLogbooks(
             tag: $tag,
@@ -141,8 +159,8 @@ class LargeDatasetSeeder extends Seeder
         $this->command?->line('Summary:');
         $this->command?->line('- institutions: '.DB::table('institutions')->where('name', 'like', $tag.'-%')->count());
         $this->command?->line('- users: '.DB::table('users')->where('email', 'like', '%.'.$tag.'@demo.local')->count());
-        $this->command?->line('- project_specs: '.DB::table('project_specs')->where('title', 'like', $tag.'-spec-%')->count());
-        $this->command?->line('- projects/tasks: '.DB::table('projects')->where('title', 'like', $tag.'-task-%')->count());
+        $this->command?->line('- projects: '.DB::table('project_specs')->where('title', 'like', $tag.'-project-%')->count());
+        $this->command?->line('- backlogs: '.DB::table('projects')->where('title', 'like', $tag.'-backlog-%')->count());
         $this->command?->line('- logbooks: '.DB::table('logbooks')->where('done_tasks', 'like', '['.$tag.'%')->count());
         $this->command?->line('- comments: '.DB::table('comments')->where('body', 'like', '['.$tag.'%')->count());
     }
@@ -216,26 +234,60 @@ class LargeDatasetSeeder extends Seeder
         foreach ($universityIds as $idx => $institutionId) {
             $rows[] = [
                 'institution_id' => $institutionId,
-                'name' => sprintf('%s-period-h1-%03d', $tag, $idx + 1),
+                'type' => Period::TYPE_INTERNSHIP,
+                'name' => sprintf('%s-internship-%03d', $tag, $idx + 1),
                 'start_date' => '2026-01-01',
-                'end_date' => '2026-06-30',
+                'end_date' => '2026-12-31',
                 'holidays' => json_encode(['2026-01-01', '2026-05-01'], JSON_THROW_ON_ERROR),
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
 
-            $rows[] = [
-                'institution_id' => $institutionId,
-                'name' => sprintf('%s-period-h2-%03d', $tag, $idx + 1),
-                'start_date' => '2026-07-01',
-                'end_date' => '2026-12-31',
-                'holidays' => json_encode(['2026-08-17', '2026-12-25'], JSON_THROW_ON_ERROR),
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+            $sprintStart = Carbon::create(2026, 1, 1);
+            for ($week = 1; $week <= 16; $week++) {
+                $start = $sprintStart->copy()->addDays(($week - 1) * 7);
+                $end = $start->copy()->addDays(6);
+
+                $rows[] = [
+                    'institution_id' => $institutionId,
+                    'type' => Period::TYPE_SPRINT,
+                    'name' => sprintf('%s-sprint-%03d-w%02d', $tag, $idx + 1, $week),
+                    'start_date' => $start->toDateString(),
+                    'end_date' => $end->toDateString(),
+                    'holidays' => json_encode([], JSON_THROW_ON_ERROR),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
         }
 
         $this->insertChunked('periods', $rows);
+    }
+
+    /**
+     * @return array<int, array<int, int>>
+     */
+    private function periodIdsByInstitution(string $tag): array
+    {
+        $rows = DB::table('periods')
+            ->where('type', Period::TYPE_SPRINT)
+            ->where('name', 'like', $tag.'-sprint-%')
+            ->orderBy('id')
+            ->get(['id', 'institution_id']);
+
+        $periodIdsByInstitution = [];
+
+        foreach ($rows as $row) {
+            if (! $row->institution_id) {
+                continue;
+            }
+
+            $institutionId = (int) $row->institution_id;
+            $periodIdsByInstitution[$institutionId] ??= [];
+            $periodIdsByInstitution[$institutionId][] = (int) $row->id;
+        }
+
+        return $periodIdsByInstitution;
     }
 
     /**
@@ -408,8 +460,8 @@ class LargeDatasetSeeder extends Seeder
 
         for ($i = 1; $i <= $specCount; $i++) {
             $specRows[] = [
-                'title' => sprintf('%s-spec-%05d', $tag, $i),
-                'specification' => sprintf('[%s] Spesifikasi project %05d untuk simulasi dataset besar.', $tag, $i),
+                'title' => sprintf('%s-project-%05d', $tag, $i),
+                'specification' => sprintf('[%s] Project %05d untuk simulasi flow backlog-sprint.', $tag, $i),
                 'created_by' => $creatorIds[array_rand($creatorIds)],
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -419,7 +471,7 @@ class LargeDatasetSeeder extends Seeder
         $this->insertChunked('project_specs', $specRows);
 
         $specIds = DB::table('project_specs')
-            ->where('title', 'like', $tag.'-spec-%')
+            ->where('title', 'like', $tag.'-project-%')
             ->orderBy('id')
             ->pluck('id')
             ->all();
@@ -464,12 +516,20 @@ class LargeDatasetSeeder extends Seeder
      * @param  array<int, int>  $internIds
      * @return array<int, int>
      */
-    private function seedTasks(string $tag, int $taskCount, array $specIds, array $assignedInternBySpec, array $internIds): array
+    private function seedBacklogs(
+        string $tag,
+        int $backlogCount,
+        array $specIds,
+        array $assignedInternBySpec,
+        array $internIds,
+        array $internInstitutionById,
+        array $periodIdsByInstitution
+    ): array
     {
         $rows = [];
         $specCount = count($specIds);
 
-        for ($i = 1; $i <= $taskCount; $i++) {
+        for ($i = 1; $i <= $backlogCount; $i++) {
             $specId = $specIds[random_int(0, $specCount - 1)];
             $assignedInterns = $assignedInternBySpec[$specId] ?? $internIds;
             $assigneeId = $assignedInterns[array_rand($assignedInterns)];
@@ -478,12 +538,22 @@ class LargeDatasetSeeder extends Seeder
                 ->subDays(random_int(0, 120))
                 ->setTime(random_int(8, 20), random_int(0, 59));
 
+            $dueDate = $createdAt->copy()->addDays(random_int(5, 45))->toDateString();
+            $institutionId = $internInstitutionById[$assigneeId] ?? null;
+            $periodOptions = $institutionId ? ($periodIdsByInstitution[$institutionId] ?? []) : [];
+            $periodId = ($periodOptions !== [] && random_int(1, 100) <= 40)
+                ? $periodOptions[array_rand($periodOptions)]
+                : null;
+
             $rows[] = [
                 'project_spec_id' => $specId,
-                'title' => sprintf('%s-task-%06d', $tag, $i),
-                'description' => sprintf('Task #%06d generated for high-volume UI testing.', $i),
+                'period_id' => $periodId,
+                'title' => sprintf('%s-backlog-%06d', $tag, $i),
+                'description' => sprintf('Backlog #%06d generated for project detail and sprint activation flow.', $i),
                 'assignee_id' => $assigneeId,
                 'created_by' => $assigneeId,
+                'due_date' => $dueDate,
+                'priority' => $this->randomPriority(),
                 'status' => $this->randomTaskStatus(),
                 'created_at' => $createdAt->toDateTimeString(),
                 'updated_at' => $createdAt->toDateTimeString(),
@@ -500,7 +570,7 @@ class LargeDatasetSeeder extends Seeder
         }
 
         $taskIds = DB::table('projects')
-            ->where('title', 'like', $tag.'-task-%')
+            ->where('title', 'like', $tag.'-backlog-%')
             ->orderBy('id')
             ->pluck('id')
             ->all();
@@ -514,6 +584,7 @@ class LargeDatasetSeeder extends Seeder
     private function seedLogbooks(string $tag, int $logbookCount, array $internRows): void
     {
         $periodsByInstitution = Period::query()
+            ->where('type', Period::TYPE_INTERNSHIP)
             ->whereNotNull('institution_id')
             ->orderBy('start_date')
             ->get(['id', 'institution_id', 'start_date', 'end_date'])
@@ -623,6 +694,25 @@ class LargeDatasetSeeder extends Seeder
         }
 
         return 'done';
+    }
+
+    private function randomPriority(): string
+    {
+        $roll = random_int(1, 100);
+
+        if ($roll <= 25) {
+            return 'low';
+        }
+
+        if ($roll <= 65) {
+            return 'medium';
+        }
+
+        if ($roll <= 90) {
+            return 'high';
+        }
+
+        return 'critical';
     }
 
     private function randomLogbookStatus(): string

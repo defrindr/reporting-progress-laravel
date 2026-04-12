@@ -33,10 +33,53 @@
 
             @if ($selectedSprint)
                 <p class="mt-3 text-xs text-slate-500">Sprint aktif: {{ $selectedSprint->name }} ({{ $selectedSprint->start_date->toDateString() }} - {{ $selectedSprint->end_date->toDateString() }})</p>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                    @if ($previousSprintId)
+                        <a href="{{ route('projects.board', ['sprint_id' => $previousSprintId]) }}" class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week Sebelumnya</a>
+                    @endif
+                    @if ($nextSprintId)
+                        <a href="{{ route('projects.board', ['sprint_id' => $nextSprintId]) }}" class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week Berikutnya</a>
+                    @endif
+                </div>
             @else
                 <p class="mt-3 text-xs text-rose-600">Belum ada sprint tersedia untuk akun ini.</p>
             @endif
         </article>
+
+        @if (! $isManager)
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-semibold">Tambah Task Pribadi Intern</h2>
+                <p class="mt-1 text-sm text-slate-500">Task harus memilih project dan due date. Sprint akan pakai sprint aktif atau otomatis dari due date.</p>
+
+                <form method="POST" action="{{ route('projects.tasks.store') }}" class="mt-4 grid gap-3 lg:grid-cols-2">
+                    @csrf
+                    <input type="hidden" name="sprint_id" value="{{ $selectedSprint?->id }}">
+
+                    <select name="project_spec_id" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                        <option value="">Pilih Project</option>
+                        @foreach ($availableProjects as $projectOption)
+                            <option value="{{ $projectOption->id }}">{{ $projectOption->title }}</option>
+                        @endforeach
+                    </select>
+
+                    <input name="due_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+
+                    <input name="title" type="text" required placeholder="Nama task" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
+
+                    <textarea name="description" rows="3" placeholder="Detail task tambahan (opsional)" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2"></textarea>
+
+                    <select name="priority" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                        <option value="low">low</option>
+                        <option value="medium" selected>medium</option>
+                        <option value="high">high</option>
+                        <option value="critical">critical</option>
+                    </select>
+
+                    <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan Task</button>
+                </form>
+            </article>
+        @endif
 
         <div class="grid gap-4 lg:grid-cols-3" data-kanban-board>
             @foreach ($groups as $status => $label)

@@ -35,7 +35,7 @@ class ProjectController extends Controller
     {
         $validated = $request->validate([
             'project_spec_id' => ['nullable', 'exists:project_specs,id'],
-            'period_id' => ['nullable', 'exists:periods,id'],
+            'period_id' => ['nullable', Rule::exists('periods', 'id')->where('type', 'sprint')],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'due_date' => ['nullable', 'date'],
@@ -86,7 +86,7 @@ class ProjectController extends Controller
     {
         $validated = $request->validate([
             'project_spec_id' => ['sometimes', 'nullable', 'exists:project_specs,id'],
-            'period_id' => ['sometimes', 'nullable', 'exists:periods,id'],
+            'period_id' => ['sometimes', 'nullable', Rule::exists('periods', 'id')->where('type', 'sprint')],
             'title' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'due_date' => ['sometimes', 'nullable', 'date'],

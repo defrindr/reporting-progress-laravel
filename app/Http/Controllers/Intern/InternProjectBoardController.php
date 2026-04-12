@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Intern;
 use App\Http\Controllers\Controller;
 use App\Models\Period;
 use App\Models\Project;
+use App\Models\ProjectSpec;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Spatie\Activitylog\Models\Activity;
@@ -27,6 +29,7 @@ class InternProjectBoardController extends Controller
 
         $isManager = $user->canManageAllProjects();
         $sprints = Period::query()
+            ->where('type', Period::TYPE_SPRINT)
             ->with('institution:id,name')
             ->when(! $isManager, fn ($query) => $query->where('institution_id', $user->institution_id))
             ->orderByDesc('start_date')
@@ -44,6 +47,37 @@ class InternProjectBoardController extends Controller
                 return $today >= $startDate && $today <= $endDate;
             }) ?? $sprints->first();
         }
+
+        if ($selectedSprint) {
+            $this->carryOverUnfinishedTasks($selectedSprint, $user, $isManager);
+        }
+
+        $sprintTimeline = $sprints
+            ->sortBy(static fn (Period $period) => optional($period->start_date)->toDateString())
+            ->values();
+
+        $selectedIndex = $selectedSprint
+            ? $sprintTimeline->search(static fn (Period $period): bool => $period->id === $selectedSprint->id)
+            : false;
+
+        $previousSprintId = null;
+        $nextSprintId = null;
+
+        if ($selectedIndex !== false) {
+            if ($selectedIndex > 0) {
+                $previousSprintId = $sprintTimeline->get($selectedIndex - 1)?->id;
+            }
+
+            if ($selectedIndex < $sprintTimeline->count() - 1) {
+                $nextSprintId = $sprintTimeline->get($selectedIndex + 1)?->id;
+            }
+        }
+
+        $availableProjects = $isManager
+            ? collect()
+            : $user->assignedProjectSpecs()
+                ->orderBy('project_specs.title')
+                ->get(['project_specs.id', 'project_specs.title']);
 
         $taskQuery = Project::query()
             ->with(['spec:id,title,specification', 'assignee:id,name', 'creator:id,name', 'sprint:id,name,start_date,end_date', 'comments.user:id,name'])
@@ -72,7 +106,69 @@ class InternProjectBoardController extends Controller
             'isManager' => $isManager,
             'sprints' => $sprints,
             'selectedSprint' => $selectedSprint,
+            'previousSprintId' => $previousSprintId,
+            'nextSprintId' => $nextSprintId,
+            'availableProjects' => $availableProjects,
         ]);
+    }
+
+    public function storeTask(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'project_spec_id' => ['required', 'exists:project_specs,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'due_date' => ['required', 'date'],
+            'priority' => ['nullable', Rule::in(['low', 'medium', 'high', 'critical'])],
+            'sprint_id' => ['nullable', Rule::exists('periods', 'id')->where('type', Period::TYPE_SPRINT)],
+        ]);
+
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            abort(403);
+        }
+
+        if ($user->canManageAllProjects()) {
+            abort(403);
+        }
+
+        $isAssigned = $user->assignedProjectSpecs()
+            ->where('project_specs.id', (int) $validated['project_spec_id'])
+            ->exists();
+
+        if (! $isAssigned) {
+            return back()->withErrors(['project_spec_id' => 'Project tidak ter-assign untuk akun ini.'])->withInput();
+        }
+
+        $targetSprint = null;
+
+        if (! empty($validated['sprint_id'])) {
+            $targetSprint = Period::query()
+                ->where('type', Period::TYPE_SPRINT)
+                ->where('institution_id', $user->institution_id)
+                ->find((int) $validated['sprint_id']);
+
+            if (! $targetSprint) {
+                return back()->withErrors(['sprint_id' => 'Sprint tidak valid untuk institusi intern.'])->withInput();
+            }
+        } else {
+            $targetSprint = $this->resolveSprintByDate($user, (string) $validated['due_date']);
+        }
+
+        Project::create([
+            'project_spec_id' => (int) $validated['project_spec_id'],
+            'period_id' => $targetSprint?->id,
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'due_date' => $validated['due_date'],
+            'priority' => $validated['priority'] ?? 'medium',
+            'assignee_id' => $user->id,
+            'created_by' => $user->id,
+            'status' => 'todo',
+        ]);
+
+        return back()->with('status', 'Task tambahan berhasil dibuat oleh intern.');
     }
 
     public function setStatus(Request $request, Project $project): RedirectResponse|JsonResponse
@@ -170,5 +266,73 @@ class InternProjectBoardController extends Controller
         ]);
 
         return back()->with('status', 'Komentar berhasil ditambahkan.');
+    }
+
+    private function resolveSprintByDate(User $user, string $date): ?Period
+    {
+        return Period::query()
+            ->where('type', Period::TYPE_SPRINT)
+            ->where('institution_id', $user->institution_id)
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->first();
+    }
+
+    private function carryOverUnfinishedTasks(Period $selectedSprint, User $actor, bool $isManager): void
+    {
+        $previousSprint = Period::query()
+            ->where('type', Period::TYPE_SPRINT)
+            ->where('institution_id', $selectedSprint->institution_id)
+            ->whereDate('end_date', '<', $selectedSprint->start_date)
+            ->orderByDesc('end_date')
+            ->first();
+
+        if (! $previousSprint) {
+            return;
+        }
+
+        $carryQuery = Project::query()
+            ->where('period_id', $previousSprint->id)
+            ->whereIn('status', ['todo', 'doing']);
+
+        if (! $isManager) {
+            $carryQuery->where('assignee_id', $actor->id);
+        }
+
+        $taskIds = $carryQuery->pluck('id')->map(static fn (int $id): int => (int) $id)->all();
+
+        if ($taskIds === []) {
+            return;
+        }
+
+        $now = now()->toDateTimeString();
+        $note = sprintf(
+            'Sprint pindah: %s -> %s karena task belum selesai.',
+            $previousSprint->name,
+            $selectedSprint->name,
+        );
+
+        DB::transaction(function () use ($taskIds, $selectedSprint, $note, $actor, $now): void {
+            Project::query()
+                ->whereIn('id', $taskIds)
+                ->update([
+                    'period_id' => $selectedSprint->id,
+                    'updated_at' => $now,
+                ]);
+
+            $commentRows = [];
+            foreach ($taskIds as $taskId) {
+                $commentRows[] = [
+                    'body' => $note,
+                    'user_id' => $actor->id,
+                    'commentable_id' => $taskId,
+                    'commentable_type' => Project::class,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            DB::table('comments')->insert($commentRows);
+        });
     }
 }

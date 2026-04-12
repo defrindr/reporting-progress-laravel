@@ -24,6 +24,7 @@ class AdminPeriodController extends Controller
     {
         $validated = $request->validate([
             'institution_id' => ['required', Rule::exists('institutions', 'id')->where('type', 'university')],
+            'type' => ['nullable', Rule::in([Period::TYPE_INTERNSHIP, Period::TYPE_SPRINT])],
             'name' => ['required', 'string', 'max:255'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
@@ -32,6 +33,7 @@ class AdminPeriodController extends Controller
 
         Period::create([
             'institution_id' => (int) $validated['institution_id'],
+            'type' => $validated['type'] ?? Period::TYPE_INTERNSHIP,
             'name' => $validated['name'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
@@ -45,6 +47,7 @@ class AdminPeriodController extends Controller
     {
         $validated = $request->validate([
             'institution_id' => ['required', Rule::exists('institutions', 'id')->where('type', 'university')],
+            'type' => ['nullable', Rule::in([Period::TYPE_INTERNSHIP, Period::TYPE_SPRINT])],
             'name' => ['required', 'string', 'max:255'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
@@ -53,6 +56,7 @@ class AdminPeriodController extends Controller
 
         $period->update([
             'institution_id' => (int) $validated['institution_id'],
+            'type' => $validated['type'] ?? Period::TYPE_INTERNSHIP,
             'name' => $validated['name'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],

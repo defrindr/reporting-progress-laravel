@@ -38,6 +38,7 @@ class LogbookController extends Controller
 
         $activePeriod = Period::query()
             ->where('institution_id', $user->institution_id)
+            ->where('type', Period::TYPE_INTERNSHIP)
             ->whereDate('start_date', '<=', $reportDate)
             ->whereDate('end_date', '>=', $reportDate)
             ->first();
@@ -82,6 +83,7 @@ class LogbookController extends Controller
 
         $activePeriod = Period::query()
             ->where('institution_id', $user->institution_id)
+            ->where('type', Period::TYPE_INTERNSHIP)
             ->whereDate('start_date', '<=', $reportDate)
             ->whereDate('end_date', '>=', $reportDate)
             ->first();

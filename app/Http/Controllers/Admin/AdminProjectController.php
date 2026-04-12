@@ -111,7 +111,11 @@ class AdminProjectController extends Controller
         return view('admin.projects.show', [
             'project' => $projectSpec->load('creator:id,name'),
             'interns' => User::query()->role('Intern')->orderBy('name')->get(['id', 'name']),
-            'periods' => Period::query()->with('institution:id,name')->orderByDesc('start_date')->get(),
+            'periods' => Period::query()
+                ->where('type', Period::TYPE_SPRINT)
+                ->with('institution:id,name')
+                ->orderByDesc('start_date')
+                ->get(),
             'backlogs' => $backlogs,
             'activationCandidates' => $activationCandidates,
             'activationPeriodId' => $activationPeriodId,
@@ -188,7 +192,7 @@ class AdminProjectController extends Controller
     public function activateSprint(Request $request, ProjectSpec $projectSpec): RedirectResponse
     {
         $validated = $request->validate([
-            'period_id' => ['required', 'exists:periods,id'],
+            'period_id' => ['required', Rule::exists('periods', 'id')->where('type', Period::TYPE_SPRINT)],
             'backlog_ids' => ['required', 'array', 'min:1'],
             'backlog_ids.*' => ['integer', 'exists:projects,id'],
         ]);

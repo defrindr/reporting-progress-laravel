@@ -11,8 +11,13 @@ class Period extends Model
 {
     use HasFactory;
 
+    public const TYPE_INTERNSHIP = 'internship';
+
+    public const TYPE_SPRINT = 'sprint';
+
     protected $fillable = [
         'institution_id',
+        'type',
         'name',
         'start_date',
         'end_date',
