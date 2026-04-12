@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AdminProjectController;
 use App\Http\Controllers\Admin\AdminRoleController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AuthSessionController;
+use App\Http\Controllers\Intern\InternDashboardController;
 use App\Http\Controllers\Intern\InternLogbookController;
 use App\Http\Controllers\Intern\InternProjectBoardController;
 use App\Http\Controllers\ProfilePasswordController;
@@ -35,8 +36,16 @@ Route::middleware('auth')->group(function (): void {
             return redirect()->route('admin.dashboard');
         }
 
+        if ($user instanceof User && $user->hasRole('Intern')) {
+            return redirect()->route('intern.dashboard');
+        }
+
         return redirect()->route('projects.board');
     })->name('dashboard');
+
+    Route::get('/intern/dashboard', [InternDashboardController::class, 'index'])
+        ->middleware('role:Intern')
+        ->name('intern.dashboard');
 
     Route::get('/logbook', [InternLogbookController::class, 'index'])->name('logbook.form');
     Route::post('/logbook', [InternLogbookController::class, 'store'])->name('logbook.store');
@@ -74,6 +83,7 @@ Route::middleware('auth')->group(function (): void {
 
         Route::get('/periods', [AdminPeriodController::class, 'index'])->name('periods.index');
         Route::post('/periods', [AdminPeriodController::class, 'store'])->name('periods.store');
+        Route::get('/periods/new-users-csv', [AdminPeriodController::class, 'downloadNewUsersCsv'])->name('periods.new-users-csv');
         Route::put('/periods/{period}', [AdminPeriodController::class, 'update'])->name('periods.update');
         Route::delete('/periods/{period}', [AdminPeriodController::class, 'destroy'])->name('periods.destroy');
 

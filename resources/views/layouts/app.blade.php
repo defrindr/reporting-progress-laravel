@@ -12,6 +12,11 @@
         $authUser = auth()->user();
         $isAdmin = $authUser?->isAdmin() ?? false;
         $isManager = $authUser?->canManageAllProjects() ?? false;
+        $isIntern = $authUser?->hasRole('Intern') ?? false;
+        $dashboardRoute = $isAdmin
+            ? route('admin.dashboard')
+            : ($isIntern ? route('intern.dashboard') : route('projects.board'));
+        $isDashboardActive = request()->routeIs('dashboard') || request()->routeIs('admin.dashboard') || request()->routeIs('intern.dashboard');
         $sidebarLinkClass = static fn (bool $active): string => $active ? 'app-sidebar-link app-sidebar-link-active' : 'app-sidebar-link';
     @endphp
 
@@ -30,6 +35,8 @@
                 </div>
 
                 <nav class="space-y-1.5 text-sm">
+                    <a href="{{ $dashboardRoute }}" class="{{ $sidebarLinkClass($isDashboardActive) }}">Dashboard</a>
+
                     @if ($isAdmin)
                         <a href="{{ route('admin.dashboard') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.dashboard')) }}">Admin Dashboard</a>
                         <a href="{{ route('admin.users.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.users.*')) }}">Users</a>

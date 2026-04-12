@@ -140,8 +140,8 @@ class AdminProjectBacklogFlowTest extends TestCase
 
         $this->assertDatabaseHas('projects', [
             'id' => $backlogA->id,
-            'period_id' => null,
-            'assignee_id' => null,
+            'period_id' => $backlogA->period_id,
+            'assignee_id' => $intern->id,
         ]);
 
         $backlogB->refresh();

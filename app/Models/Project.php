@@ -64,18 +64,36 @@ class Project extends Model
     return LogOptions::defaults()
       ->useLogName('project')
       ->logOnly(['status'])
-      ->logOnlyDirty();
+      ->logOnlyDirty()
+      ->dontSubmitEmptyLogs();
   }
 
 
   public function tapActivity(Activity $activity, string $eventName)
   {
-    if ($eventName === 'updated') {
-      $old = $activity->properties['old']['status'] ?? '-';
-      $new = $activity->properties['attributes']['status'] ?? '-';
+    if (
+      $eventName === 'updated'
+      && isset($activity->properties['old']['status'])
+      && isset($activity->properties['attributes']['status'])
+    ) {
+      $old = (string) $activity->properties['old']['status'];
+      $new = (string) $activity->properties['attributes']['status'];
+
+      if ($old === $new) {
+        return;
+      }
+
       $user = Auth::user()?->name ?? 'System';
 
       $activity->description = "update status from {$old} to {$new} by {$user}";
+    }
+    if ($eventName === 'created') {
+      $userId = Auth::id();
+      $user = User::where('id', $userId)->first();
+      $userName = $user?->name ?? 'System';
+      if ($user->isAdmin()) return;
+
+      $activity->description = "new task created by {$userName} on " . date("Y-m-d H:i:s");
     }
   }
 }

@@ -229,12 +229,35 @@
                             <div class="kanban-card rounded-xl border border-slate-200 bg-white p-3 shadow-sm {{ $canDrag ? 'cursor-grab' : '' }}"
                                 draggable="{{ $canDrag ? 'true' : 'false' }}" data-project-id="{{ $project->id }}"
                                 data-current-status="{{ $project->status }}">
-                                <h3 class="text-sm font-semibold text-slate-900">{{ $project->title }}</h3>
-                                <p class="mt-1 text-xs text-slate-500">Intern: {{ $project->assignee?->name ?? '-' }}</p>
-                                <p class="mt-1 text-xs text-slate-500">Project: {{ $project->spec?->title ?? '-' }}</p>
-                                <p class="mt-1 text-xs text-slate-500">Priority: {{ $project->priority }} | Due:
-                                    {{ optional($project->due_date)->toDateString() ?? '-' }}</p>
-                                <p class="mt-2 text-sm text-slate-700">{{ $project->description ?: 'Tanpa deskripsi' }}</p>
+                                <div class="flex items-start justify-between gap-2">
+                                    <h3 class="text-sm font-semibold text-slate-900">{{ $project->title }}</h3>
+                                    <span class="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase text-slate-600">{{ $project->status }}</span>
+                                </div>
+
+                                <div class="mt-2 grid gap-1.5 text-[11px] text-slate-600">
+                                    <p class="inline-flex items-center gap-1.5 rounded-md bg-slate-50 px-2 py-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 14a4 4 0 10-8 0m8 0a4 4 0 018 0m-8 0v1a3 3 0 003 3h2a3 3 0 003-3v-1m-8 0H8m0 0a4 4 0 00-8 0m8 0v1a3 3 0 01-3 3H3a3 3 0 01-3-3v-1" />
+                                        </svg>
+                                        {{ $project->assignee?->name ?? 'Unassigned' }}
+                                    </p>
+
+                                    <p class="inline-flex items-center gap-1.5 rounded-md bg-slate-50 px-2 py-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 17v-2a4 4 0 014-4h4m0 0l-3-3m3 3l-3 3M5 3h14a2 2 0 012 2v4a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
+                                        </svg>
+                                        {{ $project->spec?->title ?? '-' }}
+                                    </p>
+
+                                    <p class="inline-flex items-center gap-1.5 rounded-md bg-slate-50 px-2 py-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z" />
+                                        </svg>
+                                        Due {{ optional($project->due_date)->toDateString() ?? '-' }} | {{ strtoupper((string) $project->priority) }}
+                                    </p>
+                                </div>
+
+                                <p class="mt-2 text-xs text-slate-600">{{ \Illuminate\Support\Str::limit($project->description ?: 'Tanpa deskripsi', 90) }}</p>
 
                                 @if ($canDrag)
                                     <p class="mt-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">Drag card
@@ -283,42 +306,53 @@
                                     @endif
                                 @endif
 
-                                <div class="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">History</p>
-                                    <ul class="mt-2 space-y-1 text-xs text-slate-600">
-                                        @forelse (($activityByProject[$project->id] ?? collect())->take(4) as $activity)
-                                            <li class="rounded bg-white px-2 py-1.5">
-                                                {{ $activity->description }}
-                                                <span class="text-slate-400">({{ $activity->created_at }})</span>
-                                            </li>
-                                        @empty
-                                            <li class="text-slate-500">Belum ada history.</li>
-                                        @endforelse
-                                    </ul>
-                                </div>
+                                <details class="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                                    <summary class="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-500">Lihat Detail Lengkap</summary>
 
-                                <div class="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comments</p>
-                                    <ul class="mt-2 space-y-1 text-xs text-slate-700">
-                                        @forelse ($project->comments->take(5) as $comment)
-                                            <li class="rounded bg-white px-2 py-1.5"><span
-                                                    class="font-medium">{{ $comment->user?->name }}:</span>
-                                                {{ $comment->body }}</li>
-                                        @empty
-                                            <li class="text-slate-500">Belum ada komentar.</li>
-                                        @endforelse
-                                    </ul>
+                                    <div class="mt-2 space-y-3">
+                                        <div class="rounded-lg border border-slate-100 bg-white p-2">
+                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Deskripsi</p>
+                                            <p class="mt-1 text-xs text-slate-700">{{ $project->description ?: 'Tanpa deskripsi' }}</p>
+                                        </div>
 
-                                    <form method="POST" action="{{ route('projects.comment', $project) }}"
-                                        class="mt-2 space-y-2">
-                                        @csrf
-                                        <textarea name="body" rows="2" required placeholder="Tambah komentar..."
-                                            class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs"></textarea>
-                                        <button type="submit"
-                                            class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700">Post
-                                            Comment</button>
-                                    </form>
-                                </div>
+                                        <div class="rounded-lg border border-slate-100 bg-white p-2">
+                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">History</p>
+                                            <ul class="mt-2 space-y-1 text-xs text-slate-600">
+                                                @forelse (($activityByProject[$project->id] ?? collect())->take(6) as $activity)
+                                                    <li class="rounded bg-slate-50 px-2 py-1.5">
+                                                        {{ $activity->description }}
+                                                        <span class="text-slate-400">({{ $activity->created_at }})</span>
+                                                    </li>
+                                                @empty
+                                                    <li class="text-slate-500">Belum ada history.</li>
+                                                @endforelse
+                                            </ul>
+                                        </div>
+
+                                        <div class="rounded-lg border border-slate-100 bg-white p-2">
+                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comments</p>
+                                            <ul class="mt-2 space-y-1 text-xs text-slate-700">
+                                                @forelse ($project->comments->take(5) as $comment)
+                                                    <li class="rounded bg-slate-50 px-2 py-1.5"><span
+                                                            class="font-medium">{{ $comment->user?->name }}:</span>
+                                                        {{ $comment->body }}</li>
+                                                @empty
+                                                    <li class="text-slate-500">Belum ada komentar.</li>
+                                                @endforelse
+                                            </ul>
+
+                                            <form method="POST" action="{{ route('projects.comment', $project) }}"
+                                                class="mt-2 space-y-2">
+                                                @csrf
+                                                <textarea name="body" rows="2" required placeholder="Tambah komentar..."
+                                                    class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs"></textarea>
+                                                <button type="submit"
+                                                    class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700">Post
+                                                    Comment</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </details>
                             </div>
                         @empty
                             <p

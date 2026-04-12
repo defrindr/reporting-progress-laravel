@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Institution;
 use App\Models\Period;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
@@ -88,7 +90,14 @@ class AdminUserController extends Controller
             return back()->withErrors(['user' => 'Tidak bisa menghapus akun sendiri.']);
         }
 
-        $user->delete();
+        DB::transaction(function () use ($user): void {
+            Project::query()
+                ->where('assignee_id', $user->id)
+                ->update(['assignee_id' => null]);
+
+            $user->assignedProjectSpecs()->detach();
+            $user->delete();
+        });
 
         return back()->with('status', 'User berhasil dihapus.');
     }

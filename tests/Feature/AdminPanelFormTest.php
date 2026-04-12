@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Institution;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -53,13 +55,28 @@ class AdminPanelFormTest extends TestCase
                 'start_date' => '2026-01-01',
                 'end_date' => '2026-03-31',
                 'holidays' => '2026-01-02,2026-01-03',
-                'new_users' => "Intern Batch Satu|batch1@example.com\nIntern Batch Dua|batch2@example.com",
+                'new_users' => [
+                    ['name' => 'Intern Batch Satu', 'email' => 'batch1@example.com'],
+                    ['name' => 'Intern Batch Dua', 'email' => 'batch2@example.com'],
+                ],
             ])
             ->assertRedirect();
 
         $this->assertDatabaseHas('periods', ['name' => 'Periode Form']);
         $this->assertDatabaseHas('users', ['email' => 'batch1@example.com', 'institution_id' => $institutionId]);
         $this->assertDatabaseHas('users', ['email' => 'batch2@example.com', 'institution_id' => $institutionId]);
+
+        $newUserIds = User::query()
+            ->whereIn('email', ['batch1@example.com', 'batch2@example.com'])
+            ->pluck('id')
+            ->map(static fn (int $id): int => (int) $id)
+            ->all();
+
+        $csvResponse = $this->actingAs($admin)
+            ->get('/admin/periods/new-users-csv?ids='.implode(',', $newUserIds));
+
+        $csvResponse->assertOk();
+        $this->assertStringContainsString('batch1@example.com', (string) $csvResponse->streamedContent());
 
         $periodCreatedIntern = User::query()->where('email', 'batch1@example.com')->firstOrFail();
         $this->assertTrue(Hash::check('password123', $periodCreatedIntern->password));
@@ -88,6 +105,43 @@ class AdminPanelFormTest extends TestCase
 
         $this->assertDatabaseHas('project_specs', ['title' => 'Spec Week 1 Laravel']);
         $this->assertDatabaseHas('project_spec_user', ['user_id' => $intern->id]);
+    }
+
+    public function test_admin_can_delete_user_even_when_user_is_task_assignee(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('Admin');
+
+        $institution = Institution::create([
+            'name' => 'Universitas Delete Safe',
+            'type' => 'university',
+        ]);
+
+        $intern = User::factory()->create([
+            'institution_id' => $institution->id,
+        ]);
+        $intern->assignRole('Intern');
+
+        $task = Project::create([
+            'title' => 'Task FK User Delete',
+            'description' => 'Task untuk memastikan delete user aman',
+            'assignee_id' => $intern->id,
+            'created_by' => $admin->id,
+            'status' => 'todo',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete('/admin/users/'.$intern->id)
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('users', [
+            'id' => $intern->id,
+        ]);
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $task->id,
+            'assignee_id' => null,
+        ]);
     }
 
     public function test_non_admin_cannot_access_admin_panel(): void

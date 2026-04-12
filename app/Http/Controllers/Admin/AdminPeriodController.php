@@ -8,12 +8,14 @@ use App\Models\Period;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminPeriodController extends Controller
 {
@@ -40,13 +42,16 @@ class AdminPeriodController extends Controller
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'holidays' => ['nullable', 'string'],
-            'new_users' => ['nullable', 'string'],
+            'new_users' => ['nullable', 'array'],
+            'new_users.*.name' => ['nullable', 'string', 'max:255'],
+            'new_users.*.email' => ['nullable', 'email', 'max:255'],
         ]);
 
-        $newUsers = $this->parseNewUsers($validated['new_users'] ?? null);
+        $newUsers = $this->normalizeNewUsersInput($validated['new_users'] ?? null);
         $this->ensureNewUserEmailsAreAvailable($newUsers);
+        $createdUsers = collect();
 
-        DB::transaction(function () use ($validated, $newUsers): void {
+        DB::transaction(function () use ($validated, $newUsers, &$createdUsers): void {
             Period::create([
                 'institution_id' => (int) $validated['institution_id'],
                 'type' => Period::TYPE_INTERNSHIP,
@@ -56,7 +61,7 @@ class AdminPeriodController extends Controller
                 'holidays' => $this->normalizeHolidays($validated['holidays'] ?? null),
             ]);
 
-            $this->createUsersForInstitution((int) $validated['institution_id'], $newUsers);
+            $createdUsers = $this->createUsersForInstitution((int) $validated['institution_id'], $newUsers);
         });
 
         $status = 'Periode berhasil ditambahkan.';
@@ -64,7 +69,60 @@ class AdminPeriodController extends Controller
             $status .= ' '.count($newUsers).' user intern baru dibuat dengan password default: '.self::DEFAULT_NEW_USER_PASSWORD.'.';
         }
 
-        return back()->with('status', $status);
+        return back()
+            ->with('status', $status)
+            ->with('new_user_ids', $createdUsers->pluck('id')->map(static fn (int $id): int => (int) $id)->all());
+    }
+
+    public function downloadNewUsersCsv(Request $request): StreamedResponse|RedirectResponse
+    {
+        $ids = collect(explode(',', (string) $request->query('ids')))
+            ->map(static fn (string $id): string => trim($id))
+            ->filter(static fn (string $id): bool => ctype_digit($id))
+            ->map(static fn (string $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return back()->withErrors(['new_users' => 'Tidak ada data user baru untuk diunduh.']);
+        }
+
+        $users = User::query()
+            ->with('institution:id,name')
+            ->whereIn('id', $ids)
+            ->orderBy('id')
+            ->get(['id', 'name', 'email', 'institution_id', 'created_at']);
+
+        if ($users->isEmpty()) {
+            return back()->withErrors(['new_users' => 'User baru tidak ditemukan untuk diunduh.']);
+        }
+
+        $filename = 'period-new-users-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($users): void {
+            $stream = fopen('php://output', 'w');
+
+            if ($stream === false) {
+                return;
+            }
+
+            fputcsv($stream, ['name', 'email', 'institution', 'default_password', 'created_at']);
+
+            foreach ($users as $user) {
+                fputcsv($stream, [
+                    $user->name,
+                    $user->email,
+                    $user->institution?->name ?? '-',
+                    self::DEFAULT_NEW_USER_PASSWORD,
+                    optional($user->created_at)->toDateTimeString(),
+                ]);
+            }
+
+            fclose($stream);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function update(Request $request, Period $period): RedirectResponse
@@ -124,51 +182,38 @@ class AdminPeriodController extends Controller
     /**
      * @return array<int, array{name: string, email: string}>
      */
-    private function parseNewUsers(?string $raw): array
+    private function normalizeNewUsersInput(?array $rows): array
     {
-        if (! $raw) {
+        if (! $rows) {
             return [];
         }
 
-        $rows = collect(preg_split('/\r\n|\r|\n/', $raw) ?: [])
-            ->map(static fn (string $line): string => trim($line))
-            ->filter()
+        $normalizedRows = collect($rows)
+            ->map(static fn (array $row): array => [
+                'name' => trim((string) ($row['name'] ?? '')),
+                'email' => strtolower(trim((string) ($row['email'] ?? ''))),
+            ])
+            ->filter(static fn (array $row): bool => $row['name'] !== '' || $row['email'] !== '')
             ->values();
 
-        if ($rows->isEmpty()) {
+        if ($normalizedRows->isEmpty()) {
             return [];
         }
 
-        $users = [];
-        $lineErrors = [];
+        $users = $normalizedRows->all();
+        $errors = [];
 
-        foreach ($rows as $index => $line) {
+        foreach ($users as $index => $user) {
             $lineNumber = $index + 1;
 
-            if (str_contains($line, '|')) {
-                [$nameRaw, $emailRaw] = explode('|', $line, 2);
-            } elseif (str_contains($line, ',')) {
-                [$nameRaw, $emailRaw] = explode(',', $line, 2);
-            } else {
-                $lineErrors[] = "Baris {$lineNumber} harus format Nama|email@domain.com";
+            if ($user['name'] === '' || $user['email'] === '') {
+                $errors[] = "Baris {$lineNumber}: nama dan email wajib diisi.";
                 continue;
             }
 
-            $name = trim($nameRaw);
-            $email = strtolower(trim($emailRaw));
-
-            if ($name === '') {
-                $lineErrors[] = "Baris {$lineNumber}: nama wajib diisi.";
+            if (! filter_var($user['email'], FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Baris {$lineNumber}: email tidak valid.";
             }
-
-            if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $lineErrors[] = "Baris {$lineNumber}: email tidak valid.";
-            }
-
-            $users[] = [
-                'name' => $name,
-                'email' => $email,
-            ];
         }
 
         $emailDuplicates = collect($users)
@@ -180,12 +225,12 @@ class AdminPeriodController extends Controller
             ->all();
 
         if ($emailDuplicates !== []) {
-            $lineErrors[] = 'Email duplikat di input: '.implode(', ', $emailDuplicates);
+            $errors[] = 'Email duplikat di input: '.implode(', ', $emailDuplicates);
         }
 
-        if ($lineErrors !== []) {
+        if ($errors !== []) {
             throw ValidationException::withMessages([
-                'new_users' => $lineErrors,
+                'new_users' => $errors,
             ]);
         }
 
@@ -221,13 +266,14 @@ class AdminPeriodController extends Controller
     /**
      * @param  array<int, array{name: string, email: string}>  $newUsers
      */
-    private function createUsersForInstitution(int $institutionId, array $newUsers): void
+    private function createUsersForInstitution(int $institutionId, array $newUsers): Collection
     {
         if ($newUsers === []) {
-            return;
+            return collect();
         }
 
         Role::findOrCreate('Intern', 'web');
+        $createdUsers = collect();
 
         foreach ($newUsers as $newUser) {
             $user = User::query()->create([
@@ -238,6 +284,9 @@ class AdminPeriodController extends Controller
             ]);
 
             $user->assignRole('Intern');
+            $createdUsers->push($user);
         }
+
+        return $createdUsers;
     }
 }

@@ -98,6 +98,7 @@ class AdminProjectController extends Controller
 
         $activationCandidates = Project::query()
             ->where('project_spec_id', $projectSpec->id)
+            ->whereNull('period_id')
             ->with(['assignee:id,name', 'sprint:id,name'])
             ->orderByDesc('id')
             ->get(['id', 'project_spec_id', 'period_id', 'title', 'assignee_id', 'priority', 'status']);
@@ -112,14 +113,6 @@ class AdminProjectController extends Controller
             : [null, false];
 
         $activeBacklogIds = [];
-        if ($activationSprint) {
-            $activeBacklogIds = Project::query()
-                ->where('project_spec_id', $projectSpec->id)
-                ->where('period_id', $activationSprint->id)
-                ->pluck('id')
-                ->map(static fn (int $id): int => (int) $id)
-                ->all();
-        }
 
         $periodsQuery = Period::query()
             ->where('type', Period::TYPE_SPRINT)
@@ -215,6 +208,7 @@ class AdminProjectController extends Controller
 
         $selectedBacklogIds = Project::query()
             ->where('project_spec_id', $projectSpec->id)
+            ->whereNull('period_id')
             ->whereIn('id', $validated['backlog_ids'])
             ->pluck('id')
             ->map(static fn (int $id): int => (int) $id)
@@ -276,19 +270,11 @@ class AdminProjectController extends Controller
         }
 
         DB::transaction(function () use ($projectSpec, $targetSprint, $selectedBacklogIds, $assigneeMap): void {
-            Project::query()
-                ->where('project_spec_id', $projectSpec->id)
-                ->where('period_id', $targetSprint->id)
-                ->whereNotIn('id', $selectedBacklogIds)
-                ->update([
-                    'period_id' => null,
-                    'assignee_id' => null,
-                ]);
-
             foreach ($selectedBacklogIds as $backlogId) {
                 Project::query()
                     ->where('project_spec_id', $projectSpec->id)
                     ->where('id', $backlogId)
+                    ->whereNull('period_id')
                     ->update([
                         'period_id' => $targetSprint->id,
                         'assignee_id' => (int) $assigneeMap[$backlogId],

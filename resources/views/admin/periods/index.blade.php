@@ -1,5 +1,18 @@
 @extends('layouts.app')
 
+@php
+    $newUserIds = collect(session('new_user_ids', []))
+        ->map(static fn ($id): int => (int) $id)
+        ->filter(static fn (int $id): bool => $id > 0)
+        ->unique()
+        ->values();
+
+    $oldNewUsers = old('new_users');
+    if (! is_array($oldNewUsers) || $oldNewUsers === []) {
+        $oldNewUsers = [['name' => '', 'email' => '']];
+    }
+@endphp
+
 @section('content')
     <section class="space-y-6">
         <header class="flex flex-wrap items-center justify-between gap-3">
@@ -10,6 +23,16 @@
 
             <button type="button" onclick="document.getElementById('create-period-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Period</button>
         </header>
+
+        @if ($newUserIds->isNotEmpty())
+            <article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                <p>User baru berhasil dibuat. Kamu bisa download daftar akun untuk dibagikan.</p>
+                <a href="{{ route('admin.periods.new-users-csv', ['ids' => $newUserIds->implode(',')]) }}"
+                    class="rounded-lg bg-blue-700 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-600">
+                    Download CSV User Baru
+                </a>
+            </article>
+        @endif
 
         <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
@@ -87,12 +110,23 @@
 
                 <div class="space-y-2 lg:col-span-2">
                     <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">List User Baru (Opsional)</label>
-                    <textarea
-                        name="new_users"
-                        rows="5"
-                        placeholder="Nama Intern|intern1@kampus.ac.id&#10;Nama Intern 2|intern2@kampus.ac.id"
-                        class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">{{ old('new_users') }}</textarea>
-                    <p class="text-xs text-slate-500">Satu baris satu user, format: Nama|email. User akan dibuat sebagai Intern dengan password default <span class="font-semibold">password123</span>.</p>
+                    <div id="new-user-rows" class="space-y-2">
+                        @foreach ($oldNewUsers as $index => $newUser)
+                            <div class="new-user-row grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1fr_1fr_auto]" data-index="{{ $index }}">
+                                <input type="text" name="new_users[{{ $index }}][name]" value="{{ $newUser['name'] ?? '' }}"
+                                    placeholder="Nama Intern"
+                                    class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                                <input type="email" name="new_users[{{ $index }}][email]" value="{{ $newUser['email'] ?? '' }}"
+                                    placeholder="intern@institusi.ac.id"
+                                    class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                                <button type="button" class="rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                    onclick="removeNewUserRow(this)">Hapus</button>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <button type="button" onclick="addNewUserRow()" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50">+ Tambah User</button>
+                    <p class="text-xs text-slate-500">User akan dibuat sebagai Intern dengan password default <span class="font-semibold">password123</span>.</p>
                 </div>
             </div>
 
@@ -128,6 +162,43 @@
     </dialog>
 
     <script>
+        function addNewUserRow() {
+            const container = document.getElementById('new-user-rows');
+            if (!container) {
+                return;
+            }
+
+            const nextIndex = container.querySelectorAll('.new-user-row').length;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'new-user-row grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1fr_1fr_auto]';
+            wrapper.dataset.index = String(nextIndex);
+            wrapper.innerHTML = `
+                <input type="text" name="new_users[${nextIndex}][name]" placeholder="Nama Intern" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <input type="email" name="new_users[${nextIndex}][email]" placeholder="intern@institusi.ac.id" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <button type="button" class="rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50" onclick="removeNewUserRow(this)">Hapus</button>
+            `;
+
+            container.appendChild(wrapper);
+        }
+
+        function removeNewUserRow(button) {
+            const row = button.closest('.new-user-row');
+            if (!row) {
+                return;
+            }
+
+            const container = document.getElementById('new-user-rows');
+            const rows = container ? container.querySelectorAll('.new-user-row') : [];
+            if (rows.length <= 1) {
+                row.querySelectorAll('input').forEach((input) => {
+                    input.value = '';
+                });
+                return;
+            }
+
+            row.remove();
+        }
+
         function openEditPeriodModal(button) {
             document.getElementById('edit-period-form').action = button.dataset.editAction;
             document.getElementById('edit-period-institution').value = button.dataset.institutionId || '';
