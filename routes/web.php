@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminEvaluationLabController;
 use App\Http\Controllers\Admin\AdminInstitutionController;
 use App\Http\Controllers\Admin\AdminPeriodController;
 use App\Http\Controllers\Admin\AdminProjectController;
@@ -97,5 +98,7 @@ Route::middleware('auth')->group(function (): void {
         Route::patch('/projects/{projectSpec}/activate-sprint', [AdminProjectController::class, 'activateSprint'])->name('projects.activate-sprint');
         Route::put('/projects/{projectSpec}', [AdminProjectController::class, 'update'])->name('projects.update');
         Route::delete('/projects/{projectSpec}', [AdminProjectController::class, 'destroy'])->name('projects.destroy');
+
+        Route::get('/evaluation-lab', [AdminEvaluationLabController::class, 'index'])->name('evaluation-lab.index');
     });
 });

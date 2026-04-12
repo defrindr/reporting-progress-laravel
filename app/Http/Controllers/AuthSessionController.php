@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Period;
 use App\Models\User;
-use App\Support\SprintWindow;
+use App\Support\SprintPeriodResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -36,19 +35,10 @@ class AuthSessionController extends Controller
 
         $user = Auth::user();
         if ($user instanceof User && $user->institution_id) {
-            [$startDate, $endDate] = SprintWindow::resolveRange(Carbon::now(), true);
-
-            Period::query()->firstOrCreate(
-                [
-                    'institution_id' => (int) $user->institution_id,
-                    'type' => Period::TYPE_SPRINT,
-                    'start_date' => $startDate->toDateString(),
-                    'end_date' => $endDate->toDateString(),
-                ],
-                [
-                    'name' => SprintWindow::formatName($startDate, $endDate),
-                    'holidays' => [],
-                ]
+            SprintPeriodResolver::resolveForInstitution(
+                institutionId: (int) $user->institution_id,
+                baseDate: Carbon::now(),
+                createIfMissing: true,
             );
         }
 

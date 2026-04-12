@@ -7,7 +7,7 @@ use App\Models\Period;
 use App\Models\Project;
 use App\Models\ProjectSpec;
 use App\Models\User;
-use App\Support\SprintWindow;
+use App\Support\SprintPeriodResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -517,37 +517,10 @@ class AdminProjectController extends Controller
      */
     private function resolveTargetSprint(int $institutionId, bool $createIfMissing): array
     {
-        [$startDate, $endDate] = SprintWindow::resolveRange(Carbon::now(), true);
-
-        $activeSprint = Period::query()
-            ->where('type', Period::TYPE_SPRINT)
-            ->where('institution_id', $institutionId)
-            ->whereDate('start_date', $startDate->toDateString())
-            ->whereDate('end_date', $endDate->toDateString())
-            ->orderByDesc('start_date')
-            ->first();
-
-        if ($activeSprint) {
-            return [$activeSprint, false];
-        }
-
-        if (! $createIfMissing) {
-            return [null, false];
-        }
-
-        $newSprint = Period::query()->firstOrCreate(
-            [
-                'institution_id' => $institutionId,
-                'type' => Period::TYPE_SPRINT,
-                'start_date' => $startDate->toDateString(),
-                'end_date' => $endDate->toDateString(),
-            ],
-            [
-                'name' => SprintWindow::formatName($startDate, $endDate),
-                'holidays' => [],
-            ]
+        return SprintPeriodResolver::resolveForInstitution(
+            institutionId: $institutionId,
+            baseDate: Carbon::now(),
+            createIfMissing: $createIfMissing,
         );
-
-        return [$newSprint, $newSprint->wasRecentlyCreated];
     }
 }

@@ -126,4 +126,48 @@ class LoginFlowTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
     }
+
+    public function test_login_reuses_existing_overlapping_sprint_for_same_institution(): void
+    {
+        Carbon::setTestNow('2026-04-12 09:00:00');
+
+        $institution = Institution::create([
+            'name' => 'SMKN Overlap Sprint',
+            'type' => 'university',
+        ]);
+
+        $user = User::factory()->create([
+            'email' => 'overlap-sprint@example.com',
+            'password' => Hash::make('password123'),
+            'institution_id' => $institution->id,
+        ]);
+
+        [$startDate, $endDate] = SprintWindow::resolveRange(Carbon::now(), true);
+
+        Period::create([
+            'institution_id' => $institution->id,
+            'type' => Period::TYPE_SPRINT,
+            'name' => 'Sprint Overlap Existing',
+            'start_date' => $startDate->copy()->subDay()->toDateString(),
+            'end_date' => $endDate->copy()->subDay()->toDateString(),
+            'holidays' => [],
+        ]);
+
+        $this->post('/login', [
+            'email' => 'overlap-sprint@example.com',
+            'password' => 'password123',
+        ])->assertRedirect('/dashboard');
+
+        $this->assertAuthenticatedAs($user);
+
+        $this->assertSame(
+            1,
+            Period::query()
+                ->where('institution_id', $institution->id)
+                ->where('type', Period::TYPE_SPRINT)
+                ->count()
+        );
+
+        Carbon::setTestNow();
+    }
 }

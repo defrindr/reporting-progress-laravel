@@ -62,6 +62,7 @@
                         <a href="{{ route('admin.institutions.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.institutions.*')) }}">Institutions</a>
                         <a href="{{ route('admin.periods.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.periods.*')) }}">Periods</a>
                         <a href="{{ route('admin.projects.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.projects.*')) }}">Project Specs</a>
+                        <a href="{{ route('admin.evaluation-lab.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.evaluation-lab.*')) }}">Evaluation Lab</a>
                     @endif
 
                     <a href="{{ route('projects.board') }}" class="{{ $sidebarLinkClass(request()->routeIs('projects.*')) }}">Task Board</a>
