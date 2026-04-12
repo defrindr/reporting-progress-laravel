@@ -45,7 +45,7 @@
                     <ul class="mt-8 space-y-3 text-sm text-slate-200">
                         <li>Role-based access (Admin, Supervisor, Intern)</li>
                         <li>Tracking harian per periode magang</li>
-                        <li>Project board dengan comment dan history</li>
+                        <li>Task board dengan comment dan history</li>
                     </ul>
                 </div>
             </section>

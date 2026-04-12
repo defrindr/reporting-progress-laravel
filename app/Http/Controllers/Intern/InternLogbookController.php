@@ -234,7 +234,7 @@ class InternLogbookController extends Controller
 
         $doneText = $doneLines !== ''
             ? "Resume {$rangeLabel}:\n{$doneLines}"
-            : "Resume {$rangeLabel}: belum ada task selesai yang terdeteksi dari project board.";
+            : "Resume {$rangeLabel}: belum ada task selesai yang terdeteksi dari task board.";
 
         $nextText = $nextLines !== ''
             ? "Rencana lanjutan:\n{$nextLines}"

@@ -19,7 +19,7 @@
                 @elseif (($isWeekendLock ?? false) === true)
                     <div class="mt-4 rounded-xl border border-sky-300 bg-sky-50 p-3 text-sm text-sky-900">
                         <p class="font-semibold">Mode Weekend</p>
-                        <p class="mt-1">Tidak bisa buat report untuk Sabtu/Minggu. Kamu bisa lanjut update backlog minggu depan di project board.</p>
+                        <p class="mt-1">Tidak bisa buat report untuk Sabtu/Minggu. Kamu bisa lanjut update backlog minggu depan di task board.</p>
                     </div>
                 @endif
 
@@ -32,7 +32,7 @@
                     </div>
 
                     <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <p class="text-sm font-semibold text-slate-800">Auto Resume dari Project Board</p>
+                        <p class="text-sm font-semibold text-slate-800">Auto Resume dari Task Board</p>
                         <p class="mt-1 text-xs text-slate-500">Tarik task harian atau mingguan yang sudah dikerjakan, lalu tetap bisa kamu edit manual.</p>
 
                         <div class="mt-3 grid gap-2 lg:grid-cols-[1fr_1fr_auto]">

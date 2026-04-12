@@ -28,7 +28,7 @@
 @section('content')
     <section class="space-y-6">
         <header>
-            <h1 class="text-2xl font-semibold tracking-tight">Project Board</h1>
+            <h1 class="text-2xl font-semibold tracking-tight">Task Board</h1>
             <p class="mt-1 text-sm text-slate-500">Board kanban ditampilkan per sprint dan mendukung drag-and-drop status
                 task.</p>
         </header>

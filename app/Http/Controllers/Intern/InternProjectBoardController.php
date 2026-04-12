@@ -51,7 +51,7 @@ class InternProjectBoardController extends Controller
         $accessState = $isManager ? ['is_read_only' => false, 'reason' => null] : $this->internAccessState($user);
 
         if (! $isManager && $accessState['is_read_only']) {
-            abort(403, (string) ($accessState['reason'] ?? 'Akses project board ditolak.'));
+            abort(403, (string) ($accessState['reason'] ?? 'Akses task board ditolak.'));
         }
 
         $isWeekendRestriction = ! $isManager && now()->isWeekend();

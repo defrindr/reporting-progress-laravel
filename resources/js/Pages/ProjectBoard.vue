@@ -124,7 +124,7 @@ onMounted(async () => {
 <template>
   <section class="space-y-6">
     <header class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Project Board</h1>
+      <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Task Board</h1>
       <p class="mt-1 text-sm text-slate-500">Track project flow, update status, and collaborate with comments.</p>
     </header>
 
