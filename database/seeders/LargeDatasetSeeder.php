@@ -91,6 +91,13 @@ class LargeDatasetSeeder extends Seeder
         $internIds = array_map(static fn (array $row): int => $row['id'], $internRows);
         $this->command?->line('- users seeded');
 
+        $this->attachInternsToInternshipPeriods(
+            tag: $tag,
+            internRows: $internRows,
+            now: $now,
+        );
+        $this->command?->line('- period participants seeded');
+
         $this->seedRoleAssignments(
             roleIds: $roleIds,
             adminId: $adminId,
@@ -288,6 +295,40 @@ class LargeDatasetSeeder extends Seeder
         }
 
         return $periodIdsByInstitution;
+    }
+
+    /**
+     * @param  array<int, array{id: int, institution_id: int}>  $internRows
+     */
+    private function attachInternsToInternshipPeriods(string $tag, array $internRows, string $now): void
+    {
+        $periodByInstitution = DB::table('periods')
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->where('name', 'like', $tag.'-internship-%')
+            ->pluck('id', 'institution_id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        $rows = [];
+        foreach ($internRows as $intern) {
+            $institutionId = (int) ($intern['institution_id'] ?? 0);
+            $periodId = (int) ($periodByInstitution[$institutionId] ?? 0);
+
+            if ($periodId <= 0) {
+                continue;
+            }
+
+            $rows[] = [
+                'period_id' => $periodId,
+                'user_id' => (int) $intern['id'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if ($rows !== []) {
+            $this->insertChunked('period_user', $rows, 1200);
+        }
     }
 
     /**

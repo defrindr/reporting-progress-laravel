@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -77,6 +78,13 @@ class User extends Authenticatable
         return $this->belongsToMany(ProjectSpec::class, 'project_spec_user');
     }
 
+    public function internshipPeriods(): BelongsToMany
+    {
+        return $this->belongsToMany(Period::class, 'period_user')
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->withTimestamps();
+    }
+
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
@@ -90,5 +98,21 @@ class User extends Authenticatable
     public function canManageAllProjects(): bool
     {
         return $this->roles()->whereIn('name', ['Admin', 'Supervisor'])->exists();
+    }
+
+    public function activeInternshipPeriod(?Carbon $date = null): ?Period
+    {
+        $targetDate = ($date ?? now())->toDateString();
+
+        return $this->internshipPeriods()
+            ->whereDate('start_date', '<=', $targetDate)
+            ->whereDate('end_date', '>=', $targetDate)
+            ->orderByDesc('start_date')
+            ->first();
+    }
+
+    public function isActiveInternshipParticipant(?Carbon $date = null): bool
+    {
+        return $this->activeInternshipPeriod($date) !== null;
     }
 }

@@ -47,16 +47,7 @@ class LogbookController extends Controller
             return response()->json(['message' => 'Tidak bisa buat report untuk hari Sabtu/Minggu.'], 422);
         }
 
-        if (! $user->institution_id) {
-            return response()->json(['message' => 'User must be linked to an institution'], 422);
-        }
-
-        $activePeriod = Period::query()
-            ->where('institution_id', $user->institution_id)
-            ->where('type', Period::TYPE_INTERNSHIP)
-            ->whereDate('start_date', '<=', $reportDate)
-            ->whereDate('end_date', '>=', $reportDate)
-            ->first();
+        $activePeriod = $this->activeInternshipForUser($user, (string) $reportDate);
 
         if (! $activePeriod) {
             return response()->json(['message' => 'No active period found for this report date'], 422);
@@ -105,16 +96,7 @@ class LogbookController extends Controller
             return response()->json(['message' => 'Tidak bisa buat report untuk hari Sabtu/Minggu.'], 422);
         }
 
-        if (! $user->institution_id) {
-            return response()->json(['message' => 'User must be linked to an institution'], 422);
-        }
-
-        $activePeriod = Period::query()
-            ->where('institution_id', $user->institution_id)
-            ->where('type', Period::TYPE_INTERNSHIP)
-            ->whereDate('start_date', '<=', $reportDate)
-            ->whereDate('end_date', '>=', $reportDate)
-            ->first();
+        $activePeriod = $this->activeInternshipForUser($user, (string) $reportDate);
 
         if (! $activePeriod) {
             return response()->json(['message' => 'No active period found for this report date'], 422);
@@ -154,14 +136,7 @@ class LogbookController extends Controller
             ];
         }
 
-        $today = now()->toDateString();
-
-        $activeInternship = Period::query()
-            ->where('institution_id', $user->institution_id)
-            ->where('type', Period::TYPE_INTERNSHIP)
-            ->whereDate('start_date', '<=', $today)
-            ->whereDate('end_date', '>=', $today)
-            ->exists();
+        $activeInternship = $this->activeInternshipForUser($user, now()->toDateString());
 
         if ($activeInternship) {
             return [
@@ -170,9 +145,23 @@ class LogbookController extends Controller
             ];
         }
 
-        $latestInternship = Period::query()
+        $hasActiveInstitutionPeriod = Period::query()
             ->where('institution_id', $user->institution_id)
             ->where('type', Period::TYPE_INTERNSHIP)
+            ->whereDate('start_date', '<=', now()->toDateString())
+            ->whereDate('end_date', '>=', now()->toDateString())
+            ->exists();
+
+        if ($hasActiveInstitutionPeriod) {
+            return [
+                'is_read_only' => true,
+                'reason' => 'Kamu tidak terdaftar sebagai siswa magang pada period aktif institusi saat ini.',
+            ];
+        }
+
+        $latestInternship = Period::query()
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->whereHas('interns', static fn ($query) => $query->where('users.id', $user->id))
             ->orderByDesc('end_date')
             ->first();
 
@@ -187,5 +176,15 @@ class LogbookController extends Controller
             'is_read_only' => true,
             'reason' => 'Tidak ada periode aktif untuk tanggal ini.',
         ];
+    }
+
+    private function activeInternshipForUser(User $user, string $date): ?Period
+    {
+        return $user->internshipPeriods()
+            ->where('institution_id', $user->institution_id)
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->orderByDesc('start_date')
+            ->first();
     }
 }

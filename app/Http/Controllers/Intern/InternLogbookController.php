@@ -28,6 +28,10 @@ class InternLogbookController extends Controller
             ? ['is_read_only' => true, 'reason' => 'Supervisor/Admin hanya dapat melihat data logbook.']
             : $this->internAccessState($user);
 
+        if (! $isManager && $accessState['is_read_only']) {
+            abort(403, (string) ($accessState['reason'] ?? 'Akses logbook ditolak.'));
+        }
+
         $logbooksQuery = Logbook::query()->with(['period:id,name', 'user:id,name,institution_id']);
 
         if ($isManager) {
@@ -76,16 +80,7 @@ class InternLogbookController extends Controller
             ])->withInput();
         }
 
-        if (! $user->institution_id) {
-            return back()->withErrors(['report_date' => 'Akun intern harus terhubung ke institusi.'])->withInput();
-        }
-
-        $activePeriod = Period::query()
-            ->where('institution_id', $user->institution_id)
-            ->where('type', Period::TYPE_INTERNSHIP)
-            ->whereDate('start_date', '<=', $reportDate)
-            ->whereDate('end_date', '>=', $reportDate)
-            ->first();
+        $activePeriod = $this->activeInternshipForUser($user, (string) $reportDate);
 
         if (! $activePeriod) {
             return back()->withErrors(['report_date' => 'Tidak ada periode aktif untuk tanggal ini.'])->withInput();
@@ -121,6 +116,19 @@ class InternLogbookController extends Controller
         if ($user instanceof User && $user->canManageAllProjects()) {
             return response()->json([
                 'message' => 'Supervisor/Admin hanya dapat melihat data logbook.',
+            ], 403);
+        }
+
+        if (! ($user instanceof User)) {
+            return response()->json([
+                'message' => 'Unauthenticated',
+            ], 401);
+        }
+
+        $accessState = $this->internAccessState($user);
+        if ($accessState['is_read_only']) {
+            return response()->json([
+                'message' => $accessState['reason'],
             ], 403);
         }
 
@@ -313,14 +321,7 @@ class InternLogbookController extends Controller
             ];
         }
 
-        $today = now()->toDateString();
-
-        $activeInternship = Period::query()
-            ->where('institution_id', $user->institution_id)
-            ->where('type', Period::TYPE_INTERNSHIP)
-            ->whereDate('start_date', '<=', $today)
-            ->whereDate('end_date', '>=', $today)
-            ->exists();
+        $activeInternship = $this->activeInternshipForUser($user, now()->toDateString());
 
         if ($activeInternship) {
             return [
@@ -329,9 +330,23 @@ class InternLogbookController extends Controller
             ];
         }
 
-        $latestInternship = Period::query()
+        $hasActiveInstitutionPeriod = Period::query()
             ->where('institution_id', $user->institution_id)
             ->where('type', Period::TYPE_INTERNSHIP)
+            ->whereDate('start_date', '<=', now()->toDateString())
+            ->whereDate('end_date', '>=', now()->toDateString())
+            ->exists();
+
+        if ($hasActiveInstitutionPeriod) {
+            return [
+                'is_read_only' => true,
+                'reason' => 'Kamu tidak terdaftar sebagai siswa magang pada period aktif institusi saat ini.',
+            ];
+        }
+
+        $latestInternship = Period::query()
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->whereHas('interns', static fn ($query) => $query->where('users.id', $user->id))
             ->orderByDesc('end_date')
             ->first();
 
@@ -346,5 +361,15 @@ class InternLogbookController extends Controller
             'is_read_only' => true,
             'reason' => 'Tidak ada periode aktif untuk tanggal ini.',
         ];
+    }
+
+    private function activeInternshipForUser(User $user, string $date): ?Period
+    {
+        return $user->internshipPeriods()
+            ->where('institution_id', $user->institution_id)
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->orderByDesc('start_date')
+            ->first();
     }
 }

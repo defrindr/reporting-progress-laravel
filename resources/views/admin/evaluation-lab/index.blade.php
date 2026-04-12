@@ -23,7 +23,7 @@
             </span>
         </header>
 
-        <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm overflow-x-auto">
             <form method="GET" action="{{ route('admin.evaluation-lab.index') }}" class="grid gap-3 xl:grid-cols-[280px_320px_260px_170px_120px_auto_auto]">
                 <select name="institution_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                     <option value="">Pilih Institusi</option>

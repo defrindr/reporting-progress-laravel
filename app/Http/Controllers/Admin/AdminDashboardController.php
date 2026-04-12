@@ -20,15 +20,14 @@ class AdminDashboardController extends Controller
     public function index(): View
     {
         $today = Carbon::today();
-        $activeInstitutionIds = $this->activeInternshipInstitutionIds($today);
 
         $activeInterns = User::query()
             ->role('Intern')
-            ->when(
-                $activeInstitutionIds !== [],
-                fn ($query) => $query->whereIn('institution_id', $activeInstitutionIds),
-                fn ($query) => $query->whereRaw('1 = 0'),
-            )
+            ->whereHas('internshipPeriods', static function ($query) use ($today): void {
+                $query
+                    ->whereDate('start_date', '<=', $today->toDateString())
+                    ->whereDate('end_date', '>=', $today->toDateString());
+            })
             ->orderBy('name')
             ->get(['id', 'name', 'institution_id']);
 
@@ -112,23 +111,6 @@ class AdminDashboardController extends Controller
             ],
             'topInterns' => $topInterns,
         ]);
-    }
-
-    /**
-     * @return array<int, int>
-     */
-    private function activeInternshipInstitutionIds(Carbon $today): array
-    {
-        return Period::query()
-            ->where('type', Period::TYPE_INTERNSHIP)
-            ->whereDate('start_date', '<=', $today->toDateString())
-            ->whereDate('end_date', '>=', $today->toDateString())
-            ->pluck('institution_id')
-            ->filter()
-            ->map(static fn (int $id): int => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
     }
 
     /**

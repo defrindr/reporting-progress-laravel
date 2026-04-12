@@ -35,7 +35,7 @@ class InternWebFlowTest extends TestCase
         $intern = User::factory()->create(['institution_id' => $institution->id]);
         $intern->assignRole('Intern');
 
-        Period::create([
+        $internship = Period::create([
             'institution_id' => $institution->id,
             'type' => Period::TYPE_INTERNSHIP,
             'name' => 'Batch Web',
@@ -43,6 +43,7 @@ class InternWebFlowTest extends TestCase
             'end_date' => '2026-06-30',
             'holidays' => [],
         ]);
+        $internship->interns()->sync([$intern->id]);
 
         $this->actingAs($intern)
             ->post('/logbook', [
@@ -70,7 +71,7 @@ class InternWebFlowTest extends TestCase
         $intern = User::factory()->create(['institution_id' => $institution->id]);
         $intern->assignRole('Intern');
 
-        Period::create([
+        $internship = Period::create([
             'institution_id' => $institution->id,
             'type' => Period::TYPE_INTERNSHIP,
             'name' => 'Batch Holiday',
@@ -78,6 +79,7 @@ class InternWebFlowTest extends TestCase
             'end_date' => '2026-06-30',
             'holidays' => ['2026-03-10'],
         ]);
+        $internship->interns()->sync([$intern->id]);
 
         $this->actingAs($intern)
             ->from('/logbook')
@@ -105,7 +107,7 @@ class InternWebFlowTest extends TestCase
         $otherIntern = User::factory()->create(['institution_id' => $institution->id]);
         $otherIntern->assignRole('Intern');
 
-        Period::create([
+        $internship = Period::create([
             'institution_id' => $institution->id,
             'type' => Period::TYPE_INTERNSHIP,
             'name' => 'Periode Aktif Board',
@@ -113,6 +115,7 @@ class InternWebFlowTest extends TestCase
             'end_date' => '2026-12-31',
             'holidays' => [],
         ]);
+        $internship->interns()->sync([$intern->id, $otherIntern->id]);
 
         $project = Project::create([
             'title' => 'Task Intern',
@@ -171,7 +174,7 @@ class InternWebFlowTest extends TestCase
         $intern = User::factory()->create(['institution_id' => $institution->id]);
         $intern->assignRole('Intern');
 
-        Period::create([
+        $internship = Period::create([
             'institution_id' => $institution->id,
             'type' => Period::TYPE_INTERNSHIP,
             'name' => 'Periode Aktif Sprint',
@@ -179,6 +182,7 @@ class InternWebFlowTest extends TestCase
             'end_date' => '2026-12-31',
             'holidays' => [],
         ]);
+        $internship->interns()->sync([$intern->id]);
 
         $project = ProjectSpec::create([
             'title' => 'rencanain.id',
@@ -226,7 +230,7 @@ class InternWebFlowTest extends TestCase
             'type' => 'university',
         ]);
 
-        Period::create([
+        $internship = Period::create([
             'institution_id' => $institution->id,
             'type' => Period::TYPE_INTERNSHIP,
             'name' => 'Periode Aktif Reassign',
@@ -243,6 +247,7 @@ class InternWebFlowTest extends TestCase
 
         $internB = User::factory()->create(['institution_id' => $institution->id]);
         $internB->assignRole('Intern');
+        $internship->interns()->sync([$internA->id, $internB->id]);
 
         $task = Project::create([
             'title' => 'Task Todo Reassign',
@@ -363,6 +368,16 @@ class InternWebFlowTest extends TestCase
             'created_by' => $admin->id,
         ]);
         $projectSpec->assignedInterns()->sync([$intern->id]);
+
+        $internship = Period::create([
+            'institution_id' => $institution->id,
+            'type' => Period::TYPE_INTERNSHIP,
+            'name' => 'Periode Aktif Resume',
+            'start_date' => '2026-01-01',
+            'end_date' => '2027-12-31',
+            'holidays' => [],
+        ]);
+        $internship->interns()->sync([$intern->id]);
 
         Project::create([
             'project_spec_id' => $projectSpec->id,

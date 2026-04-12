@@ -63,7 +63,7 @@ class DatabaseSeeder extends Seeder
             $internIds[$code] = $intern->id;
         }
 
-        Period::firstOrCreate([
+        $internshipPeriod = Period::firstOrCreate([
             'institution_id' => $institution->id,
             'type' => Period::TYPE_INTERNSHIP,
             'name' => 'Magang SMKN 1 Jenangan period Mei-Januari 2027',
@@ -72,6 +72,8 @@ class DatabaseSeeder extends Seeder
             'end_date' => '2027-01-31',
             'holidays' => ['2026-08-17', '2026-12-25', '2027-01-01'],
         ]);
+
+        $internshipPeriod->interns()->syncWithoutDetaching(array_values($internIds));
 
         $sprintWeeks = [
             ['week' => 1, 'start' => '2027-04-01', 'end' => '2027-04-07'],

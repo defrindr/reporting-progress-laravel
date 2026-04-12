@@ -457,9 +457,9 @@ class AdminProjectController extends Controller
             return [(int) $institutionIds->first(), null];
         }
 
-        $assignedInstitutionIds = $projectSpec->assignedInterns()
-            ->whereNotNull('users.institution_id')
-            ->pluck('users.institution_id')
+        $assignedInstitutionIds = $this->projectActiveInterns($projectSpec)
+            ->pluck('institution_id')
+            ->filter()
             ->map(static fn (int $id): int => (int) $id)
             ->unique()
             ->values();
@@ -480,15 +480,15 @@ class AdminProjectController extends Controller
      */
     private function projectActiveInterns(ProjectSpec $projectSpec): Collection
     {
-        $activeInstitutionIds = $this->activeInternInstitutionIds();
+        $activeInternIds = $this->activeInternIds();
 
-        if ($activeInstitutionIds === []) {
+        if ($activeInternIds === []) {
             return collect();
         }
 
         return $projectSpec->assignedInterns()
             ->role('Intern')
-            ->whereIn('users.institution_id', $activeInstitutionIds)
+            ->whereIn('users.id', $activeInternIds)
             ->orderBy('users.name')
             ->get(['users.id', 'users.name', 'users.institution_id']);
     }
@@ -496,16 +496,23 @@ class AdminProjectController extends Controller
     /**
      * @return array<int, int>
      */
-    private function activeInternInstitutionIds(): array
+    private function activeInternIds(?int $institutionId = null): array
     {
         $today = now()->toDateString();
 
-        return Period::query()
-            ->where('type', Period::TYPE_INTERNSHIP)
-            ->whereDate('start_date', '<=', $today)
-            ->whereDate('end_date', '>=', $today)
-            ->pluck('institution_id')
-            ->filter()
+        return User::query()
+            ->role('Intern')
+            ->when($institutionId, static fn ($query) => $query->where('institution_id', $institutionId))
+            ->whereHas('internshipPeriods', static function ($query) use ($today, $institutionId): void {
+                $query
+                    ->whereDate('start_date', '<=', $today)
+                    ->whereDate('end_date', '>=', $today);
+
+                if ($institutionId) {
+                    $query->where('institution_id', $institutionId);
+                }
+            })
+            ->pluck('id')
             ->map(static fn (int $id): int => (int) $id)
             ->unique()
             ->values()

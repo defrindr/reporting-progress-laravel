@@ -87,7 +87,7 @@ class InternshipCoreApiTest extends TestCase
         $intern = User::factory()->create(['institution_id' => $institution->id]);
         $intern->assignRole('Intern');
 
-        Period::create([
+        $period = Period::create([
             'institution_id' => $institution->id,
             'type' => Period::TYPE_INTERNSHIP,
             'name' => 'Magang Ganjil',
@@ -95,6 +95,7 @@ class InternshipCoreApiTest extends TestCase
             'end_date' => '2026-12-31',
             'holidays' => ['2026-02-02'],
         ]);
+        $period->interns()->sync([$intern->id]);
 
         $this->actingAs($intern)
             ->post('/api/logbooks', [
@@ -128,6 +129,7 @@ class InternshipCoreApiTest extends TestCase
 
         $intern = User::factory()->create(['institution_id' => $institution->id]);
         $intern->assignRole('Intern');
+        $period->interns()->sync([$intern->id]);
 
         $project = Project::create([
             'title' => 'Week 1 Laravel',

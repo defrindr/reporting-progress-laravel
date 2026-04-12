@@ -49,6 +49,11 @@ class InternProjectBoardController extends Controller
         ];
 
         $accessState = $isManager ? ['is_read_only' => false, 'reason' => null] : $this->internAccessState($user);
+
+        if (! $isManager && $accessState['is_read_only']) {
+            abort(403, (string) ($accessState['reason'] ?? 'Akses project board ditolak.'));
+        }
+
         $isWeekendRestriction = ! $isManager && now()->isWeekend();
         $nextWeekStartDate = now()->startOfWeek(Carbon::MONDAY)->addWeek()->toDateString();
 
@@ -482,14 +487,7 @@ class InternProjectBoardController extends Controller
             ];
         }
 
-        $today = now()->toDateString();
-
-        $activeInternship = Period::query()
-            ->where('institution_id', $user->institution_id)
-            ->where('type', Period::TYPE_INTERNSHIP)
-            ->whereDate('start_date', '<=', $today)
-            ->whereDate('end_date', '>=', $today)
-            ->exists();
+        $activeInternship = $this->activeInternshipForUser($user, now()->toDateString());
 
         if ($activeInternship) {
             return [
@@ -498,9 +496,23 @@ class InternProjectBoardController extends Controller
             ];
         }
 
-        $latestInternship = Period::query()
+        $hasActiveInstitutionPeriod = Period::query()
             ->where('institution_id', $user->institution_id)
             ->where('type', Period::TYPE_INTERNSHIP)
+            ->whereDate('start_date', '<=', now()->toDateString())
+            ->whereDate('end_date', '>=', now()->toDateString())
+            ->exists();
+
+        if ($hasActiveInstitutionPeriod) {
+            return [
+                'is_read_only' => true,
+                'reason' => 'Kamu tidak terdaftar sebagai siswa magang pada period aktif institusi saat ini.',
+            ];
+        }
+
+        $latestInternship = Period::query()
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->whereHas('interns', static fn ($query) => $query->where('users.id', $user->id))
             ->orderByDesc('end_date')
             ->first();
 
@@ -614,39 +626,28 @@ class InternProjectBoardController extends Controller
 
     private function activeInternsQuery(?int $institutionId = null)
     {
-        $activeInstitutionIds = $this->activeInternInstitutionIds();
-
-        $query = User::query()->role('Intern');
-
-        if ($activeInstitutionIds === []) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        $query->whereIn('institution_id', $activeInstitutionIds);
-
-        if ($institutionId) {
-            $query->where('institution_id', $institutionId);
-        }
-
-        return $query;
-    }
-
-    /**
-     * @return array<int, int>
-     */
-    private function activeInternInstitutionIds(): array
-    {
         $today = now()->toDateString();
 
-        return Period::query()
-            ->where('type', Period::TYPE_INTERNSHIP)
-            ->whereDate('start_date', '<=', $today)
-            ->whereDate('end_date', '>=', $today)
-            ->pluck('institution_id')
-            ->filter()
-            ->map(static fn (int $id): int => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
+        return User::query()
+            ->role('Intern')
+            ->whereHas('internshipPeriods', function ($query) use ($today, $institutionId): void {
+                $query
+                    ->whereDate('start_date', '<=', $today)
+                    ->whereDate('end_date', '>=', $today);
+
+                if ($institutionId) {
+                    $query->where('institution_id', $institutionId);
+                }
+            });
+    }
+
+    private function activeInternshipForUser(User $user, string $date): ?Period
+    {
+        return $user->internshipPeriods()
+            ->where('institution_id', $user->institution_id)
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->orderByDesc('start_date')
+            ->first();
     }
 }

@@ -56,9 +56,14 @@ class AdminPeriodController extends Controller
         $globalHolidayYear = isset($validated['holiday_year']) ? (int) $validated['holiday_year'] : (int) now()->year;
         $globalHolidayCountry = (string) ($validated['holiday_country'] ?? 'ID');
 
+        $institutions = Institution::query()->orderBy('name')->get(['id', 'name', 'type']);
+
         $periodsQuery = Period::query()
             ->where('type', Period::TYPE_INTERNSHIP)
-            ->with('institution:id,name,type');
+            ->with([
+                'institution:id,name,type',
+                'interns:id,name,email,institution_id',
+            ]);
 
         if ($search !== '') {
             $periodsQuery->where(function ($query) use ($search): void {
@@ -88,13 +93,31 @@ class AdminPeriodController extends Controller
             ->orderBy('holiday_date')
             ->get(['id', 'holiday_date', 'name']);
 
+        $internOptionsByInstitution = User::query()
+            ->role('Intern')
+            ->whereIn('institution_id', $institutions->pluck('id'))
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'institution_id'])
+            ->groupBy('institution_id')
+            ->map(
+                static fn (Collection $group): array => $group
+                    ->map(static fn (User $user): array => [
+                        'id' => (int) $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ])
+                    ->values()
+                    ->all()
+            )
+            ->all();
+
         return view('admin.periods.index', [
             'periods' => $periodsQuery
                 ->orderBy($sort, $direction)
                 ->orderByDesc('id')
                 ->paginate(20)
                 ->withQueryString(),
-            'institutions' => Institution::query()->orderBy('name')->get(['id', 'name', 'type']),
+            'institutions' => $institutions,
             'filters' => [
                 'q' => $search,
                 'institution_id' => $institutionId,
@@ -102,6 +125,7 @@ class AdminPeriodController extends Controller
                 'sort' => $sort,
                 'direction' => $direction,
             ],
+            'internOptionsByInstitution' => $internOptionsByInstitution,
             'holidayCountries' => self::GLOBAL_HOLIDAY_COUNTRIES,
             'globalHolidayYear' => $globalHolidayYear,
             'globalHolidayCountry' => $globalHolidayCountry,
@@ -117,18 +141,41 @@ class AdminPeriodController extends Controller
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'holidays' => ['nullable', 'string'],
+            'intern_ids' => ['nullable', 'array'],
+            'intern_ids.*' => ['integer', Rule::exists('users', 'id')],
             'new_users' => ['nullable', 'array'],
             'new_users.*.name' => ['nullable', 'string', 'max:255'],
             'new_users.*.email' => ['nullable', 'email', 'max:255'],
         ]);
 
+        $institutionId = (int) $validated['institution_id'];
+
+        $selectedInternIdsInput = collect($validated['intern_ids'] ?? [])
+            ->map(static fn ($id): int => (int) $id)
+            ->filter(static fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        $selectedInternIds = $this->resolveValidInternIdsForInstitution(
+            institutionId: $institutionId,
+            internIds: $selectedInternIdsInput,
+        );
+
+        if (count($selectedInternIdsInput) !== count($selectedInternIds)) {
+            throw ValidationException::withMessages([
+                'intern_ids' => ['List siswa magang hanya boleh berisi user role Intern dari institusi yang dipilih.'],
+            ]);
+        }
+
         $newUsers = $this->normalizeNewUsersInput($validated['new_users'] ?? null);
         $this->ensureNewUserEmailsAreAvailable($newUsers);
         $createdUsers = collect();
+        $period = null;
 
-        DB::transaction(function () use ($validated, $newUsers, &$createdUsers): void {
-            Period::create([
-                'institution_id' => (int) $validated['institution_id'],
+        DB::transaction(function () use ($validated, $newUsers, $selectedInternIds, &$createdUsers, &$period, $institutionId): void {
+            $period = Period::create([
+                'institution_id' => $institutionId,
                 'type' => Period::TYPE_INTERNSHIP,
                 'name' => $validated['name'],
                 'start_date' => $validated['start_date'],
@@ -140,7 +187,22 @@ class AdminPeriodController extends Controller
                 ),
             ]);
 
-            $createdUsers = $this->createUsersForInstitution((int) $validated['institution_id'], $newUsers);
+            $createdUsers = $this->createUsersForInstitution($institutionId, $newUsers);
+
+            $participantIds = collect($selectedInternIds)
+                ->merge(
+                    $createdUsers
+                        ->pluck('id')
+                        ->map(static fn (int $id): int => (int) $id)
+                        ->all()
+                )
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($period && $participantIds !== []) {
+                $period->interns()->sync($participantIds);
+            }
         });
 
         $status = 'Periode berhasil ditambahkan.';
@@ -379,7 +441,48 @@ class AdminPeriodController extends Controller
             ),
         ]);
 
+        $validParticipantIds = $this->resolveValidInternIdsForInstitution(
+            institutionId: (int) $validated['institution_id'],
+            internIds: $period->interns()->pluck('users.id')->map(static fn (int $id): int => (int) $id)->all(),
+        );
+
+        $period->interns()->sync($validParticipantIds);
+
         return back()->with('status', 'Periode berhasil diubah.');
+    }
+
+    public function updateParticipants(Request $request, Period $period): RedirectResponse
+    {
+        if ($period->type === Period::TYPE_SPRINT) {
+            return back()->withErrors(['period' => 'Daftar siswa magang hanya tersedia untuk period internship.']);
+        }
+
+        $validated = $request->validate([
+            'intern_ids' => ['nullable', 'array'],
+            'intern_ids.*' => ['integer', Rule::exists('users', 'id')],
+        ]);
+
+        $internIdsInput = collect($validated['intern_ids'] ?? [])
+            ->map(static fn ($id): int => (int) $id)
+            ->filter(static fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        $validInternIds = $this->resolveValidInternIdsForInstitution(
+            institutionId: (int) $period->institution_id,
+            internIds: $internIdsInput,
+        );
+
+        if (count($internIdsInput) !== count($validInternIds)) {
+            throw ValidationException::withMessages([
+                'intern_ids' => ['List siswa magang hanya boleh berisi user role Intern dari institusi period ini.'],
+            ]);
+        }
+
+        $period->interns()->sync($validInternIds);
+
+        return back()->with('status', 'List siswa magang period berhasil diperbarui.');
     }
 
     public function destroy(Period $period): RedirectResponse
@@ -437,6 +540,27 @@ class AdminPeriodController extends Controller
             ->orderBy('holiday_date')
             ->pluck('holiday_date')
             ->map(static fn ($date): string => Carbon::parse((string) $date)->toDateString())
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, int>  $internIds
+     * @return array<int, int>
+     */
+    private function resolveValidInternIdsForInstitution(int $institutionId, array $internIds): array
+    {
+        if ($internIds === []) {
+            return [];
+        }
+
+        return User::query()
+            ->role('Intern')
+            ->where('institution_id', $institutionId)
+            ->whereIn('id', $internIds)
+            ->pluck('id')
+            ->map(static fn (int $id): int => (int) $id)
             ->unique()
             ->values()
             ->all();

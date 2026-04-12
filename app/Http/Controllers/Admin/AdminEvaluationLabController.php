@@ -51,14 +51,12 @@ class AdminEvaluationLabController extends Controller
 
         $selectedPeriodId = (int) ($selectedPeriod?->id ?? 0);
 
-        $internOptions = User::query()
-            ->role('Intern')
-            ->when(
-                $selectedInstitutionId > 0,
-                static fn ($query) => $query->where('institution_id', $selectedInstitutionId),
-            )
-            ->orderBy('name')
-            ->get(['id', 'name', 'institution_id']);
+        $internOptions = $selectedPeriod instanceof Period
+            ? $selectedPeriod->interns()
+                ->role('Intern')
+                ->orderBy('users.name')
+                ->get(['users.id', 'users.name', 'users.institution_id'])
+            : collect();
 
         $selectedInternId = isset($validated['intern_id']) ? (int) $validated['intern_id'] : 0;
         if ($selectedInternId > 0 && ! $internOptions->contains(static fn (User $intern): bool => (int) $intern->id === $selectedInternId)) {

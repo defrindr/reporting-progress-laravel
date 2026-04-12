@@ -51,6 +51,7 @@ class AdminEvaluationLabTest extends TestCase
             'end_date' => '2026-04-16',
             'holidays' => ['2026-04-15'],
         ]);
+        $period->interns()->sync([$intern->id]);
 
         Logbook::create([
             'user_id' => $intern->id,

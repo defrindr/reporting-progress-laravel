@@ -21,6 +21,10 @@ class InternDashboardController extends Controller
             abort(403);
         }
 
+        if (! $user->isActiveInternshipParticipant()) {
+            abort(403, 'Kamu tidak terdaftar sebagai siswa magang pada period aktif saat ini.');
+        }
+
         $today = Carbon::today();
         $baseTaskQuery = Project::query()->where('assignee_id', $user->id);
 

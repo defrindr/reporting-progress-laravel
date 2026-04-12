@@ -39,13 +39,14 @@ class AdminProjectBacklogFlowTest extends TestCase
         ]);
         $intern->assignRole('Intern');
 
-        Period::query()->create([
+        $internship = Period::query()->create([
             'institution_id' => $institution->id,
             'type' => Period::TYPE_INTERNSHIP,
             'name' => 'Internship Aktif',
             'start_date' => now()->copy()->subDays(10)->toDateString(),
             'end_date' => now()->copy()->addDays(20)->toDateString(),
         ]);
+        $internship->interns()->sync([$intern->id]);
 
         $period = Period::query()->create([
             'institution_id' => $institution->id,
