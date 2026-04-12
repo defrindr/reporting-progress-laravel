@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Institution;
 use App\Models\GlobalHoliday;
+use App\Models\Institution;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -47,7 +47,7 @@ class AdminPanelFormTest extends TestCase
 
         $this->assertDatabaseHas('roles', ['name' => 'Mentor']);
 
-        $institutionId = (int) \App\Models\Institution::query()->where('name', 'Universitas Form')->value('id');
+        $institutionId = (int) Institution::query()->where('name', 'Universitas Form')->value('id');
 
         $this->actingAs($admin)
             ->post('/admin/periods', [

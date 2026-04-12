@@ -24,7 +24,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class AdminPeriodController extends Controller
 {
     private const DEFAULT_NEW_USER_PASSWORD = 'password123';
+
     private const NAGER_ENDPOINT = 'https://date.nager.at/api/v3/PublicHolidays/%d/%s';
+
     private const DENO_LIBUR_ENDPOINT = 'https://libur.deno.dev/api?year=%d';
 
     /**
@@ -255,7 +257,7 @@ class AdminPeriodController extends Controller
     }
 
     /**
-     * @return array{0: array<int, array{holiday_date: string, name: string, country_code: string, year: int, source: string, created_at: \Illuminate\Support\Carbon, updated_at: \Illuminate\Support\Carbon}>, 1: bool}
+     * @return array{0: array<int, array{holiday_date: string, name: string, country_code: string, year: int, source: string, created_at: Carbon, updated_at: Carbon}>, 1: bool}
      */
     private function fetchNagerHolidays(int $year, string $countryCode): array
     {
@@ -301,7 +303,7 @@ class AdminPeriodController extends Controller
     }
 
     /**
-     * @return array{0: array<int, array{holiday_date: string, name: string, country_code: string, year: int, source: string, created_at: \Illuminate\Support\Carbon, updated_at: \Illuminate\Support\Carbon}>, 1: bool}
+     * @return array{0: array<int, array{holiday_date: string, name: string, country_code: string, year: int, source: string, created_at: Carbon, updated_at: Carbon}>, 1: bool}
      */
     private function fetchLiburDenoHolidays(int $year, string $countryCode): array
     {
@@ -469,6 +471,7 @@ class AdminPeriodController extends Controller
 
             if ($user['name'] === '' || $user['email'] === '') {
                 $errors[] = "Baris {$lineNumber}: nama dan email wajib diisi.";
+
                 continue;
             }
 

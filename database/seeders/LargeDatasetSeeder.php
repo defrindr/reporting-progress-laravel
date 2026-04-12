@@ -524,8 +524,7 @@ class LargeDatasetSeeder extends Seeder
         array $internIds,
         array $internInstitutionById,
         array $periodIdsByInstitution
-    ): array
-    {
+    ): array {
         $rows = [];
         $specCount = count($specIds);
 

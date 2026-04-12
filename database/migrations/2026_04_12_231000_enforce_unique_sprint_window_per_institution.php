@@ -95,6 +95,7 @@ return new class extends Migration
 
                     if ($overlapIndex === null) {
                         $canonical[] = $sprint;
+
                         continue;
                     }
 
