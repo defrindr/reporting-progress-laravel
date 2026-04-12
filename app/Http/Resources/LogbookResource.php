@@ -20,7 +20,7 @@ class LogbookResource extends JsonResource
             'done_tasks' => $this->done_tasks,
             'next_tasks' => $this->next_tasks,
             'status' => $this->status,
-            'appendix_url' => $this->getFirstMediaUrl('appendix') ?: null,
+            'appendix_link' => $this->appendix_link,
             'created_at' => optional($this->created_at)->toISOString(),
             'updated_at' => optional($this->updated_at)->toISOString(),
         ];

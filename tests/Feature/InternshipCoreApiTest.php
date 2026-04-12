@@ -7,8 +7,6 @@ use App\Models\Period;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -72,8 +70,6 @@ class InternshipCoreApiTest extends TestCase
 
     public function test_logbook_rejects_holiday_submission(): void
     {
-        Storage::fake('local');
-
         $institution = Institution::create([
             'name' => 'Universitas B',
             'type' => 'university',
@@ -83,6 +79,7 @@ class InternshipCoreApiTest extends TestCase
         $intern->assignRole('Intern');
 
         Period::create([
+            'institution_id' => $institution->id,
             'name' => 'Magang Ganjil',
             'start_date' => '2026-01-01',
             'end_date' => '2026-03-31',
@@ -94,7 +91,7 @@ class InternshipCoreApiTest extends TestCase
                 'report_date' => '2026-02-01',
                 'done_tasks' => 'Sudah dikerjakan',
                 'next_tasks' => 'Akan dikerjakan',
-                'appendix' => UploadedFile::fake()->create('appendix.pdf', 30),
+                'appendix_link' => 'https://drive.google.com/file/d/example/view',
             ])
             ->assertStatus(422)
             ->assertJsonPath('message', 'Cannot submit reports on holidays');
@@ -108,9 +105,10 @@ class InternshipCoreApiTest extends TestCase
         ]);
 
         $period = Period::create([
+            'institution_id' => $institution->id,
             'name' => 'Batch 1',
-            'start_date' => '2026-02-01',
-            'end_date' => '2026-05-31',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
             'holidays' => [],
         ]);
 

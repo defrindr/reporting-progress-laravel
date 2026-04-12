@@ -7,6 +7,7 @@ use App\Models\Institution;
 use App\Models\Logbook;
 use App\Models\Period;
 use App\Models\Project;
+use App\Models\ProjectSpec;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Spatie\Permission\Models\Role;
@@ -21,7 +22,8 @@ class AdminDashboardController extends Controller
                 'roles' => Role::count(),
                 'institutions' => Institution::count(),
                 'periods' => Period::count(),
-                'projects' => Project::count(),
+                'project_specs' => ProjectSpec::count(),
+                'tasks' => Project::count(),
                 'logbooks' => Logbook::count(),
             ],
         ]);

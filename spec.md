@@ -52,8 +52,10 @@ Create migrations and eloquent models for the following entities with strict for
 
 ## 4. Frontend Scaffold Requirements
 Provide the Vue 3 `<script setup>` code for:
-1. **`LogbookForm.vue`**: Form with date picker, `done_tasks` textarea, `next_tasks` textarea, and file upload for appendix. Handle 422 holiday validation errors gracefully.
+1. **`LogbookForm.vue`**: Form with date picker, `done_tasks` textarea, `next_tasks` textarea, and Drive URL input for appendix. Handle 422 holiday validation errors gracefully.
 2. **`ProjectBoard.vue`**: Kanban board showing 3 columns (Todo, Doing, Done). Click on a card opens a modal showing Activitylog history and a comment submission form.
+3. **Web Admin Forms**: CRUD roles, users, institutions, periods, dan project assignment.
+4. **Web Intern Forms**: Submit logbook + board project (status advance, comment, history).
 
 ## 5. Testing Protocol (Strict Criteria)
 Use Pest or PHPUnit. Tests must use `RefreshDatabase` with SQLite memory.
@@ -65,3 +67,38 @@ Mandatory Test Cases to implement:
 5. **RBAC:** `test_intern_cannot_access_admin_endpoints`.
 
 All tests MUST pass. Ensure factories are created for User, Institution, Period, and Project.
+
+## 6. User Revision Notes (Latest, Override If Conflicting)
+The following points are newer requirements and must override older lines in this spec when there is a conflict.
+
+1. **UI Revision (Web App)**
+   - Main app must use a **left sidebar layout**.
+   - Visual direction must use **glassmorphism nuance** (blur/translucent card surfaces, layered background, clean contrast).
+   - Current CRUD UI is considered poor and must be revised.
+
+2. **Admin CRUD UI Pattern**
+   - CRUD pages (roles, users, institutions, periods, project admin) should use **table-based list views** for clarity.
+   - Keep form actions clear and compact (create/edit/delete) with readable status messaging.
+
+3. **Period Relationship Revision**
+   - Period must be explicitly connected to a **University** (institution).
+   - Add relation: `periods.institution_id` (FK to institutions).
+   - Validation/business rule: period linkage targets institution context (university scope).
+
+4. **Kanban Behavior Revision**
+   - Kanban status transition must be **2-way** (not one-way only).
+   - Project/task status should be reversible across board states (e.g., `todo <-> doing <-> done`).
+
+5. **Logbook Appendix Revision**
+   - Appendix is no longer file upload in form.
+   - Replace with **Drive link input** (shared link).
+   - Add UI note/guideline: link must be shared correctly and named in a tidy/consistent format.
+
+6. **Project & Task Workflow Revision**
+   - Admin can create **project spec** (requirement/specification document/description).
+   - One spec can be assigned to **multiple interns**.
+   - Interns themselves create and manage their own daily/working tasks derived from assigned spec.
+
+7. **Supervisor/Admin Scope Revision**
+   - Admin/Supervisor focus is **monitoring** intern daily tasks and progress.
+   - Monitoring includes status tracking, comments, and activity history visibility.

@@ -5,12 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Logbook extends Model implements HasMedia
+class Logbook extends Model
 {
-    use HasFactory, InteractsWithMedia;
+    use HasFactory;
 
     protected $fillable = [
         'user_id',
@@ -18,6 +16,7 @@ class Logbook extends Model implements HasMedia
         'report_date',
         'done_tasks',
         'next_tasks',
+        'appendix_link',
         'status',
     ];
 
@@ -36,10 +35,5 @@ class Logbook extends Model implements HasMedia
     public function period(): BelongsTo
     {
         return $this->belongsTo(Period::class);
-    }
-
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('appendix')->useDisk('local');
     }
 }

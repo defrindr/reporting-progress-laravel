@@ -29,8 +29,14 @@ class InternLogbookController extends Controller
     {
         $data = $request->validated();
         $reportDate = $data['report_date'];
+        $user = $request->user();
+
+        if (! $user->institution_id) {
+            return back()->withErrors(['report_date' => 'Akun intern harus terhubung ke institusi.'])->withInput();
+        }
 
         $activePeriod = Period::query()
+            ->where('institution_id', $user->institution_id)
             ->whereDate('start_date', '<=', $reportDate)
             ->whereDate('end_date', '>=', $reportDate)
             ->first();
@@ -44,17 +50,14 @@ class InternLogbookController extends Controller
         }
 
         $logbook = Logbook::create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'period_id' => $activePeriod->id,
             'report_date' => $reportDate,
             'done_tasks' => $data['done_tasks'],
             'next_tasks' => $data['next_tasks'],
+            'appendix_link' => $data['appendix_link'] ?? null,
             'status' => 'submitted',
         ]);
-
-        if ($request->hasFile('appendix')) {
-            $logbook->addMediaFromRequest('appendix')->toMediaCollection('appendix');
-        }
 
         return redirect()->route('logbook.form')->with('status', 'Report logbook berhasil disubmit.');
     }

@@ -4,9 +4,9 @@
     <section class="grid gap-6 lg:grid-cols-2">
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h1 class="text-2xl font-semibold tracking-tight">Form Logbook Harian</h1>
-            <p class="mt-1 text-sm text-slate-500">Isi report aktivitas yang sudah dan akan dikerjakan. Upload appendix jika diperlukan.</p>
+            <p class="mt-1 text-sm text-slate-500">Isi report aktivitas harian intern. Appendix dikirim sebagai tautan Drive/URL.</p>
 
-            <form method="POST" action="{{ route('logbook.store') }}" enctype="multipart/form-data" class="mt-5 space-y-4">
+            <form method="POST" action="{{ route('logbook.store') }}" class="mt-5 space-y-4">
                 @csrf
 
                 <div>
@@ -25,8 +25,8 @@
                 </div>
 
                 <div>
-                    <label for="appendix" class="mb-2 block text-sm font-medium text-slate-700">Appendix (Opsional)</label>
-                    <input id="appendix" name="appendix" type="file" class="block w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm">
+                    <label for="appendix_link" class="mb-2 block text-sm font-medium text-slate-700">Appendix Link (Opsional)</label>
+                    <input id="appendix_link" name="appendix_link" type="url" value="{{ old('appendix_link') }}" placeholder="https://drive.google.com/..." class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 </div>
 
                 <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Submit Report</button>
@@ -45,8 +45,8 @@
                         <p class="mt-1 text-xs text-slate-500">Periode: {{ $logbook->period?->name ?? '-' }}</p>
                         <p class="mt-3 text-sm"><span class="font-medium">Done:</span> {{ $logbook->done_tasks }}</p>
                         <p class="mt-1 text-sm"><span class="font-medium">Next:</span> {{ $logbook->next_tasks }}</p>
-                        @if ($logbook->getFirstMediaUrl('appendix'))
-                            <a href="{{ $logbook->getFirstMediaUrl('appendix') }}" target="_blank" class="mt-2 inline-block text-xs font-medium text-slate-900 underline underline-offset-4">Lihat Appendix</a>
+                        @if ($logbook->appendix_link)
+                            <a href="{{ $logbook->appendix_link }}" target="_blank" class="mt-2 inline-block text-xs font-medium text-slate-900 underline underline-offset-4">Buka Appendix Link</a>
                         @endif
                     </div>
                 @empty

@@ -59,6 +59,7 @@ class AdminPanelFormTest extends TestCase
 
         $this->actingAs($admin)
             ->post('/admin/periods', [
+                'institution_id' => $institutionId,
                 'name' => 'Periode Form',
                 'start_date' => '2026-01-01',
                 'end_date' => '2026-03-31',
@@ -70,14 +71,14 @@ class AdminPanelFormTest extends TestCase
 
         $this->actingAs($admin)
             ->post('/admin/projects', [
-                'title' => 'Week 1 Laravel',
-                'description' => 'Belajar Laravel dasar',
-                'assignee_id' => $intern->id,
-                'status' => 'todo',
+                'title' => 'Spec Week 1 Laravel',
+                'specification' => 'Belajar Laravel dasar',
+                'intern_ids' => [$intern->id],
             ])
             ->assertRedirect();
 
-        $this->assertDatabaseHas('projects', ['title' => 'Week 1 Laravel', 'assignee_id' => $intern->id]);
+        $this->assertDatabaseHas('project_specs', ['title' => 'Spec Week 1 Laravel']);
+        $this->assertDatabaseHas('project_spec_user', ['user_id' => $intern->id]);
     }
 
     public function test_non_admin_cannot_access_admin_panel(): void

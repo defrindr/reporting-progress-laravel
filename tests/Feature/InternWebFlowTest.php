@@ -7,8 +7,6 @@ use App\Models\Period;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -27,17 +25,16 @@ class InternWebFlowTest extends TestCase
 
     public function test_intern_can_submit_logbook_via_web_form(): void
     {
-        Storage::fake('local');
-
         $institution = Institution::create([
             'name' => 'SMK Testing',
-            'type' => 'vocational',
+            'type' => 'university',
         ]);
 
         $intern = User::factory()->create(['institution_id' => $institution->id]);
         $intern->assignRole('Intern');
 
         Period::create([
+            'institution_id' => $institution->id,
             'name' => 'Batch Web',
             'start_date' => '2026-01-01',
             'end_date' => '2026-06-30',
@@ -49,7 +46,7 @@ class InternWebFlowTest extends TestCase
                 'report_date' => '2026-02-10',
                 'done_tasks' => 'Selesai setup',
                 'next_tasks' => 'Lanjut API',
-                'appendix' => UploadedFile::fake()->create('appendix.pdf', 20),
+                'appendix_link' => 'https://drive.google.com/file/d/abc123/view',
             ])
             ->assertRedirect('/logbook');
 
@@ -71,6 +68,7 @@ class InternWebFlowTest extends TestCase
         $intern->assignRole('Intern');
 
         Period::create([
+            'institution_id' => $institution->id,
             'name' => 'Batch Holiday',
             'start_date' => '2026-01-01',
             'end_date' => '2026-06-30',

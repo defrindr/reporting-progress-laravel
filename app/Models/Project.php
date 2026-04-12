@@ -14,15 +14,27 @@ class Project extends Model
     use HasFactory, LogsActivity;
 
     protected $fillable = [
+        'project_spec_id',
         'title',
         'description',
         'assignee_id',
+        'created_by',
         'status',
     ];
 
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignee_id');
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function spec(): BelongsTo
+    {
+        return $this->belongsTo(ProjectSpec::class, 'project_spec_id');
     }
 
     public function comments(): MorphMany

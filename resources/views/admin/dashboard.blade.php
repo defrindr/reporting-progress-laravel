@@ -4,7 +4,7 @@
     <section class="space-y-6">
         <header>
             <h1 class="text-2xl font-semibold tracking-tight">Admin Dashboard</h1>
-            <p class="mt-1 text-sm text-slate-500">Kelola role, user, institusi, periode, dan assignment project.</p>
+            <p class="mt-1 text-sm text-slate-500">Kelola master data, assignment project spec, dan monitoring task harian intern.</p>
         </header>
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -25,8 +25,12 @@
                 <p class="mt-1 text-3xl font-semibold">{{ $stats['periods'] }}</p>
             </article>
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-sm text-slate-500">Projects</p>
-                <p class="mt-1 text-3xl font-semibold">{{ $stats['projects'] }}</p>
+                <p class="text-sm text-slate-500">Project Specs</p>
+                <p class="mt-1 text-3xl font-semibold">{{ $stats['project_specs'] }}</p>
+            </article>
+            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p class="text-sm text-slate-500">Tasks</p>
+                <p class="mt-1 text-3xl font-semibold">{{ $stats['tasks'] }}</p>
             </article>
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <p class="text-sm text-slate-500">Logbooks</p>

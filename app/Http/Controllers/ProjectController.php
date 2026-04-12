@@ -13,7 +13,7 @@ class ProjectController extends Controller
     public function index(Request $request): JsonResponse
     {
         $projects = Project::query()
-            ->with(['assignee:id,name,institution_id', 'comments.user:id,name'])
+            ->with(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name', 'comments.user:id,name'])
             ->when(
                 $request->filled('institution_id'),
                 fn (Builder $query): Builder => $query->whereHas(
@@ -30,26 +30,31 @@ class ProjectController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'project_spec_id' => ['nullable', 'exists:project_specs,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'assignee_id' => ['required', 'exists:users,id'],
+            'assignee_id' => ['nullable', 'exists:users,id'],
             'status' => ['nullable', Rule::in(['todo', 'doing', 'done'])],
         ]);
 
+        $assigneeId = $validated['assignee_id'] ?? $request->user()->id;
+
         $project = Project::create([
+            'project_spec_id' => $validated['project_spec_id'] ?? null,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'assignee_id' => $validated['assignee_id'],
+            'assignee_id' => $assigneeId,
+            'created_by' => $request->user()->id,
             'status' => $validated['status'] ?? 'todo',
         ]);
 
-        return response()->json(['data' => $project->load('assignee:id,name,institution_id')], 201);
+        return response()->json(['data' => $project->load(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name'])], 201);
     }
 
     public function show(Project $project): JsonResponse
     {
         return response()->json([
-            'data' => $project->load(['assignee:id,name,institution_id', 'comments.user:id,name']),
+            'data' => $project->load(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name', 'comments.user:id,name']),
         ]);
     }
 
@@ -58,18 +63,6 @@ class ProjectController extends Controller
         $validated = $request->validate([
             'status' => ['required', Rule::in(['todo', 'doing', 'done'])],
         ]);
-
-        $nextStatus = [
-            'todo' => 'doing',
-            'doing' => 'done',
-            'done' => null,
-        ];
-
-        if ($validated['status'] !== $nextStatus[$project->status]) {
-            return response()->json([
-                'message' => 'Invalid status transition',
-            ], 422);
-        }
 
         $project->update(['status' => $validated['status']]);
 
@@ -82,6 +75,7 @@ class ProjectController extends Controller
     public function update(Request $request, Project $project): JsonResponse
     {
         $validated = $request->validate([
+            'project_spec_id' => ['sometimes', 'nullable', 'exists:project_specs,id'],
             'title' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'assignee_id' => ['sometimes', 'exists:users,id'],
@@ -90,7 +84,7 @@ class ProjectController extends Controller
 
         $project->update($validated);
 
-        return response()->json(['data' => $project->load('assignee:id,name,institution_id')]);
+        return response()->json(['data' => $project->load(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name'])]);
     }
 
     public function addComment(Request $request, Project $project): JsonResponse

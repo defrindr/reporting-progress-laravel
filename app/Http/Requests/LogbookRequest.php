@@ -20,7 +20,7 @@ class LogbookRequest extends FormRequest
             'report_date' => ['required', 'date'],
             'done_tasks' => ['required', 'string'],
             'next_tasks' => ['required', 'string'],
-            'appendix' => ['nullable', 'file'],
+            'appendix_link' => ['nullable', 'url', 'max:2048'],
         ];
     }
 }

@@ -13,7 +13,7 @@ class LogbookController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Logbook::query()->with(['user', 'period', 'media']);
+        $query = Logbook::query()->with(['user', 'period']);
 
         if ($request->filled('period_id')) {
             $query->where('period_id', $request->integer('period_id'));
@@ -30,8 +30,14 @@ class LogbookController extends Controller
     {
         $data = $request->validated();
         $reportDate = $data['report_date'];
+        $user = $request->user();
+
+        if (! $user->institution_id) {
+            return response()->json(['message' => 'User must be linked to an institution'], 422);
+        }
 
         $activePeriod = Period::query()
+            ->where('institution_id', $user->institution_id)
             ->whereDate('start_date', '<=', $reportDate)
             ->whereDate('end_date', '>=', $reportDate)
             ->first();
@@ -45,34 +51,37 @@ class LogbookController extends Controller
         }
 
         $logbook = Logbook::create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'period_id' => $activePeriod->id,
             'report_date' => $reportDate,
             'done_tasks' => $data['done_tasks'],
             'next_tasks' => $data['next_tasks'],
+            'appendix_link' => $data['appendix_link'] ?? null,
             'status' => 'draft',
         ]);
 
-        if ($request->hasFile('appendix')) {
-            $logbook->addMediaFromRequest('appendix')->toMediaCollection('appendix');
-        }
-
-        return (new LogbookResource($logbook->load(['period', 'user', 'media'])))
+        return (new LogbookResource($logbook->load(['period', 'user'])))
             ->response()
             ->setStatusCode(201);
     }
 
     public function show(Logbook $logbook): LogbookResource
     {
-        return new LogbookResource($logbook->load(['period', 'user', 'media']));
+        return new LogbookResource($logbook->load(['period', 'user']));
     }
 
     public function update(LogbookRequest $request, Logbook $logbook): LogbookResource|JsonResponse
     {
         $data = $request->validated();
         $reportDate = $data['report_date'];
+        $user = $request->user();
+
+        if (! $user->institution_id) {
+            return response()->json(['message' => 'User must be linked to an institution'], 422);
+        }
 
         $activePeriod = Period::query()
+            ->where('institution_id', $user->institution_id)
             ->whereDate('start_date', '<=', $reportDate)
             ->whereDate('end_date', '>=', $reportDate)
             ->first();
@@ -90,14 +99,10 @@ class LogbookController extends Controller
             'report_date' => $reportDate,
             'done_tasks' => $data['done_tasks'],
             'next_tasks' => $data['next_tasks'],
+            'appendix_link' => $data['appendix_link'] ?? null,
         ]);
 
-        if ($request->hasFile('appendix')) {
-            $logbook->clearMediaCollection('appendix');
-            $logbook->addMediaFromRequest('appendix')->toMediaCollection('appendix');
-        }
-
-        return new LogbookResource($logbook->load(['period', 'user', 'media']));
+        return new LogbookResource($logbook->load(['period', 'user']));
     }
 
     public function destroy(Logbook $logbook): JsonResponse
