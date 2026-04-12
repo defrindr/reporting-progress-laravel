@@ -14,7 +14,8 @@
     <section class="space-y-6">
         <header>
             <h1 class="text-2xl font-semibold tracking-tight">Project Board</h1>
-            <p class="mt-1 text-sm text-slate-500">Board kanban ditampilkan per sprint dan mendukung drag-and-drop status task.</p>
+            <p class="mt-1 text-sm text-slate-500">Board kanban ditampilkan per sprint dan mendukung drag-and-drop status
+                task.</p>
         </header>
 
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -27,19 +28,28 @@
                         </option>
                     @endforeach
                 </select>
-                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50">Terapkan Sprint</button>
-                <a href="{{ route('projects.board') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+                <button type="submit"
+                    class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50">Terapkan
+                    Sprint</button>
+                <a href="{{ route('projects.board') }}"
+                    class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
             </form>
 
             @if ($selectedSprint)
-                <p class="mt-3 text-xs text-slate-500">Sprint aktif: {{ $selectedSprint->name }} ({{ $selectedSprint->start_date->toDateString() }} - {{ $selectedSprint->end_date->toDateString() }})</p>
+                <p class="mt-3 text-xs text-slate-500">Sprint aktif: {{ $selectedSprint->name }}
+                    ({{ $selectedSprint->start_date->toDateString() }} - {{ $selectedSprint->end_date->toDateString() }})
+                </p>
 
                 <div class="mt-3 flex flex-wrap gap-2">
                     @if ($previousSprintId)
-                        <a href="{{ route('projects.board', ['sprint_id' => $previousSprintId]) }}" class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week Sebelumnya</a>
+                        <a href="{{ route('projects.board', ['sprint_id' => $previousSprintId]) }}"
+                            class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week
+                            Sebelumnya</a>
                     @endif
                     @if ($nextSprintId)
-                        <a href="{{ route('projects.board', ['sprint_id' => $nextSprintId]) }}" class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week Berikutnya</a>
+                        <a href="{{ route('projects.board', ['sprint_id' => $nextSprintId]) }}"
+                            class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week
+                            Berikutnya</a>
                     @endif
                 </div>
             @else
@@ -47,68 +57,91 @@
             @endif
         </article>
 
-        @if (! $isManager)
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 class="text-lg font-semibold">Tambah Task Pribadi Intern</h2>
-                <p class="mt-1 text-sm text-slate-500">Task harus memilih project dan due date. Sprint akan pakai sprint aktif atau otomatis dari due date.</p>
+        @if (!$isManager)
+            <details
+                class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm [&_summary::-webkit-details-marker]:hidden">
+                <summary
+                    class="flex cursor-pointer items-center justify-between gap-1.5 text-lg font-semibold text-slate-900 list-none">
+                    Tambah Task Pribadi Intern
 
-                <form method="POST" action="{{ route('projects.tasks.store') }}" class="mt-4 grid gap-3 lg:grid-cols-2">
-                    @csrf
-                    <input type="hidden" name="sprint_id" value="{{ $selectedSprint?->id }}">
+                    <svg class="h-5 w-5 shrink-0 transition duration-300 group-open:-rotate-180"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </summary>
 
-                    <select name="project_spec_id" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                        <option value="">Pilih Project</option>
-                        @foreach ($availableProjects as $projectOption)
-                            <option value="{{ $projectOption->id }}">{{ $projectOption->title }}</option>
-                        @endforeach
-                    </select>
+                <div class="mt-4 border-t border-slate-100 pt-4">
+                    <p class="text-sm text-slate-500">Task harus memilih project dan due date. Sprint akan pakai sprint
+                        aktif atau otomatis dari due date.</p>
 
-                    <input name="due_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <form method="POST" action="{{ route('projects.tasks.store') }}"
+                        class="mt-4 grid gap-3 lg:grid-cols-2">
+                        @csrf
+                        <input type="hidden" name="sprint_id" value="{{ $selectedSprint?->id }}">
 
-                    <input name="title" type="text" required placeholder="Nama task" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
+                        <select name="project_spec_id" required
+                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                            <option value="">Pilih Project</option>
+                            @foreach ($availableProjects as $projectOption)
+                                <option value="{{ $projectOption->id }}">{{ $projectOption->title }}</option>
+                            @endforeach
+                        </select>
 
-                    <textarea name="description" rows="3" placeholder="Detail task tambahan (opsional)" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2"></textarea>
+                        <input name="due_date" type="date" required
+                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
 
-                    <select name="priority" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                        <option value="low">low</option>
-                        <option value="medium" selected>medium</option>
-                        <option value="high">high</option>
-                        <option value="critical">critical</option>
-                    </select>
+                        <input name="title" type="text" required placeholder="Nama task"
+                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
 
-                    <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan Task</button>
-                </form>
-            </article>
+                        <textarea name="description" rows="3" placeholder="Detail task tambahan (opsional)"
+                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2"></textarea>
+
+                        <select name="priority" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                            <option value="low">low</option>
+                            <option value="medium" selected>medium</option>
+                            <option value="high">high</option>
+                            <option value="critical">critical</option>
+                        </select>
+
+                        <button type="submit"
+                            class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan
+                            Task</button>
+                    </form>
+                </div>
+            </details>
         @endif
 
         <div class="grid gap-4 lg:grid-cols-3" data-kanban-board>
             @foreach ($groups as $status => $label)
-                <article class="kanban-drop-zone rounded-2xl border border-slate-200 bg-slate-50/70 p-4" data-drop-status="{{ $status }}">
+                <article class="kanban-drop-zone rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                    data-drop-status="{{ $status }}">
                     <div class="mb-3 flex items-center justify-between">
                         <h2 class="text-sm font-semibold text-slate-800">{{ $label }}</h2>
-                        <span class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700">{{ $taskItems->where('status', $status)->count() }}</span>
+                        <span
+                            class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700">{{ $taskItems->where('status', $status)->count() }}</span>
                     </div>
 
                     <div class="space-y-3">
                         @forelse ($taskItems->where('status', $status) as $project)
-                            @php($canDrag = ! $isManager && auth()->id() === $project->assignee_id)
-                            <div
-                                class="kanban-card rounded-xl border border-slate-200 bg-white p-3 shadow-sm {{ $canDrag ? 'cursor-grab' : '' }}"
-                                draggable="{{ $canDrag ? 'true' : 'false' }}"
-                                data-project-id="{{ $project->id }}"
+                            @php($canDrag = !$isManager && auth()->id() === $project->assignee_id)
+                            <div class="kanban-card rounded-xl border border-slate-200 bg-white p-3 shadow-sm {{ $canDrag ? 'cursor-grab' : '' }}"
+                                draggable="{{ $canDrag ? 'true' : 'false' }}" data-project-id="{{ $project->id }}"
                                 data-current-status="{{ $project->status }}">
                                 <h3 class="text-sm font-semibold text-slate-900">{{ $project->title }}</h3>
                                 <p class="mt-1 text-xs text-slate-500">Intern: {{ $project->assignee?->name ?? '-' }}</p>
                                 <p class="mt-1 text-xs text-slate-500">Project: {{ $project->spec?->title ?? '-' }}</p>
-                                <p class="mt-1 text-xs text-slate-500">Priority: {{ $project->priority }} | Due: {{ optional($project->due_date)->toDateString() ?? '-' }}</p>
+                                <p class="mt-1 text-xs text-slate-500">Priority: {{ $project->priority }} | Due:
+                                    {{ optional($project->due_date)->toDateString() ?? '-' }}</p>
                                 <p class="mt-2 text-sm text-slate-700">{{ $project->description ?: 'Tanpa deskripsi' }}</p>
 
                                 @if ($canDrag)
-                                    <p class="mt-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">Drag card ini ke kolom lain untuk ubah status</p>
+                                    <p class="mt-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">Drag card
+                                        ini ke kolom lain untuk ubah status</p>
                                 @endif
 
-                                @if (! $isManager && auth()->id() === $project->assignee_id)
-                                    <form method="POST" action="{{ route('projects.status', $project) }}" class="mt-3 flex items-center gap-2 text-xs">
+                                @if (!$isManager && auth()->id() === $project->assignee_id)
+                                    <form method="POST" action="{{ route('projects.status', $project) }}"
+                                        class="mt-3 flex items-center gap-2 text-xs">
                                         @csrf
                                         @method('PATCH')
                                         <select name="status" class="rounded-lg border border-slate-300 px-2 py-1.5">
@@ -116,7 +149,9 @@
                                             <option value="doing" @selected($project->status === 'doing')>doing</option>
                                             <option value="done" @selected($project->status === 'done')>done</option>
                                         </select>
-                                        <button type="submit" class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50">Set Status</button>
+                                        <button type="submit"
+                                            class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50">Set
+                                            Status</button>
                                     </form>
                                 @endif
 
@@ -138,21 +173,29 @@
                                     <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comments</p>
                                     <ul class="mt-2 space-y-1 text-xs text-slate-700">
                                         @forelse ($project->comments->take(5) as $comment)
-                                            <li class="rounded bg-white px-2 py-1.5"><span class="font-medium">{{ $comment->user?->name }}:</span> {{ $comment->body }}</li>
+                                            <li class="rounded bg-white px-2 py-1.5"><span
+                                                    class="font-medium">{{ $comment->user?->name }}:</span>
+                                                {{ $comment->body }}</li>
                                         @empty
                                             <li class="text-slate-500">Belum ada komentar.</li>
                                         @endforelse
                                     </ul>
 
-                                    <form method="POST" action="{{ route('projects.comment', $project) }}" class="mt-2 space-y-2">
+                                    <form method="POST" action="{{ route('projects.comment', $project) }}"
+                                        class="mt-2 space-y-2">
                                         @csrf
-                                        <textarea name="body" rows="2" required placeholder="Tambah komentar..." class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs"></textarea>
-                                        <button type="submit" class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700">Post Comment</button>
+                                        <textarea name="body" rows="2" required placeholder="Tambah komentar..."
+                                            class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs"></textarea>
+                                        <button type="submit"
+                                            class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700">Post
+                                            Comment</button>
                                     </form>
                                 </div>
                             </div>
                         @empty
-                            <p class="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-6 text-center text-xs text-slate-500">Tidak ada project.</p>
+                            <p
+                                class="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-6 text-center text-xs text-slate-500">
+                                Tidak ada project.</p>
                         @endforelse
                     </div>
                 </article>
@@ -193,7 +236,8 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-3 py-6 text-center text-sm text-slate-500">Tidak ada task pada sprint ini.</td>
+                                <td colspan="8" class="px-3 py-6 text-center text-sm text-slate-500">Tidak ada task
+                                    pada sprint ini.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -203,7 +247,7 @@
     </section>
 
     <script>
-        (function () {
+        (function() {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
             const board = document.querySelector('[data-kanban-board]');
 
@@ -257,14 +301,17 @@
                     const projectId = activeCard.dataset.projectId;
 
                     try {
-                        const response = await fetch(`{{ url('/projects') }}/${projectId}/status`, {
+                        const response = await fetch(
+                        `{{ url('/projects') }}/${projectId}/status`, {
                             method: 'PATCH',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json',
                                 'X-CSRF-TOKEN': csrfToken,
                             },
-                            body: JSON.stringify({ status: nextStatus }),
+                            body: JSON.stringify({
+                                status: nextStatus
+                            }),
                         });
 
                         if (!response.ok) {
