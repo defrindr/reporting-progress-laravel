@@ -35,8 +35,8 @@
                     <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
                 </select>
 
-                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50">Terapkan</button>
-                <a href="{{ route('admin.projects.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan</button>
+                <a href="{{ route('admin.projects.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
             </form>
         </article>
 
@@ -64,11 +64,11 @@
                             </td>
                             <td class="px-4 py-3 align-top">
                                 <div class="flex flex-wrap gap-2">
-                                    <a href="{{ route('admin.projects.show', $project) }}" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50">Detail</a>
+                                    <a href="{{ route('admin.projects.show', $project) }}" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Detail</a>
 
                                     <button
                                         type="button"
-                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50"
+                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700"
                                         data-edit-action="{{ route('admin.projects.update', $project) }}"
                                         data-title="{{ $project->title }}"
                                         data-description="{{ $project->specification }}"

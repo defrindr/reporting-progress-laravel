@@ -107,10 +107,10 @@
 
                     <div class="flex gap-2 md:col-span-2 xl:col-span-4">
                         <button type="submit"
-                            class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50">Terapkan
+                            class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan
                             Filter</button>
                         <a href="{{ route('projects.board') }}"
-                            class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+                            class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
                     </div>
                 </form>
 
@@ -122,12 +122,12 @@
                     <div class="flex flex-wrap gap-2">
                         @if ($previousSprintId)
                             <a href="{{ route('projects.board', array_merge(request()->except('page'), ['sprint_id' => $previousSprintId])) }}"
-                                class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week
+                                class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700">Week
                                 Sebelumnya</a>
                         @endif
                         @if ($nextSprintId)
                             <a href="{{ route('projects.board', array_merge(request()->except('page'), ['sprint_id' => $nextSprintId])) }}"
-                                class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week
+                                class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700">Week
                                 Berikutnya</a>
                         @endif
                     </div>
@@ -275,7 +275,7 @@
                                             <option value="done" @selected($project->status === 'done')>done</option>
                                         </select>
                                         <button type="submit"
-                                            class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50">Set
+                                            class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Set
                                             Status</button>
                                     </form>
                                 @elseif (!$isManager && auth()->id() === $project->assignee_id && $isWeekendRestriction)
@@ -298,7 +298,7 @@
                                                 @endforeach
                                             </select>
                                             <button type="submit"
-                                                class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50">Ubah
+                                                class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Ubah
                                                 Assignee</button>
                                         </form>
                                     @else
@@ -414,7 +414,7 @@
                                                         @endforeach
                                                     </select>
                                                     <button type="submit"
-                                                        class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50">Simpan</button>
+                                                        class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Simpan</button>
                                                 </form>
                                             @else
                                                 <span class="text-xs text-amber-700">Tidak ada intern aktif</span>

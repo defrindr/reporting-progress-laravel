@@ -64,8 +64,8 @@
                     <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
                 </select>
 
-                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50">Terapkan</button>
-                <a href="{{ route('admin.evaluation-lab.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan</button>
+                <a href="{{ route('admin.evaluation-lab.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
             </form>
         </article>
 

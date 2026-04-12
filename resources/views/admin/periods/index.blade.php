@@ -121,8 +121,8 @@
                     <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
                 </select>
 
-                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50">Terapkan</button>
-                <a href="{{ route('admin.periods.index', ['holiday_year' => $globalHolidayYear, 'holiday_country' => $selectedHolidayCountry]) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan</button>
+                <a href="{{ route('admin.periods.index', ['holiday_year' => $globalHolidayYear, 'holiday_country' => $selectedHolidayCountry]) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
             </form>
         </article>
 
@@ -161,7 +161,7 @@
 
                                     <button
                                         type="button"
-                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50"
+                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700"
                                         data-edit-action="{{ route('admin.periods.update', $period) }}"
                                         data-institution-id="{{ $period->institution_id ?? '' }}"
                                         data-name="{{ $period->name }}"
@@ -293,7 +293,7 @@
                         @endforeach
                     </div>
 
-                    <button type="button" onclick="addNewUserRow()" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50">+ Tambah User</button>
+                    <button type="button" onclick="addNewUserRow()" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">+ Tambah User</button>
                     <p class="text-xs text-slate-500">User akan dibuat sebagai Intern dengan password default <span class="font-semibold">password123</span>.</p>
                 </div>
             </div>

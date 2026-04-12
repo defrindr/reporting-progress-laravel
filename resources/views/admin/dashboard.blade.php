@@ -121,9 +121,9 @@
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <a href="{{ route('admin.users.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium shadow-sm hover:bg-slate-50">Kelola Users</a>
-            <a href="{{ route('admin.periods.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium shadow-sm hover:bg-slate-50">Kelola Periods</a>
-            <a href="{{ route('admin.projects.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium shadow-sm hover:bg-slate-50">Kelola Projects</a>
+            <a href="{{ route('admin.users.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">Kelola Users</a>
+            <a href="{{ route('admin.periods.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">Kelola Periods</a>
+            <a href="{{ route('admin.projects.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">Kelola Projects</a>
         </div>
     </section>
 
