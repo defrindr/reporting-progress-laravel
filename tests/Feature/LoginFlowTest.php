@@ -98,4 +98,32 @@ class LoginFlowTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_user_can_update_password_from_profile_menu(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'updatepass@example.com',
+            'password' => Hash::make('old-password'),
+        ]);
+
+        $this->actingAs($user)
+            ->put('/profile/password', [
+                'current_password' => 'old-password',
+                'password' => 'new-password-123',
+                'password_confirmation' => 'new-password-123',
+            ])
+            ->assertRedirect();
+
+        $user->refresh();
+        $this->assertTrue(Hash::check('new-password-123', $user->password));
+
+        $this->post('/logout')->assertRedirect('/login');
+
+        $this->post('/login', [
+            'email' => 'updatepass@example.com',
+            'password' => 'new-password-123',
+        ])->assertRedirect('/dashboard');
+
+        $this->assertAuthenticatedAs($user);
+    }
 }

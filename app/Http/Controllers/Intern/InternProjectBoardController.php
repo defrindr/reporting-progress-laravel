@@ -29,6 +29,7 @@ class InternProjectBoardController extends Controller
         }
 
         $isManager = $user->canManageAllProjects();
+        $canReassign = $user->isAdmin();
         $viewMode = $request->string('view_mode')->toString();
         if (! in_array($viewMode, ['kanban', 'table'], true)) {
             $viewMode = 'kanban';
@@ -160,6 +161,7 @@ class InternProjectBoardController extends Controller
             'tasks' => $tasks,
             'activityByProject' => $activityByProject,
             'isManager' => $isManager,
+            'canReassign' => $canReassign,
             'isInternReadOnly' => (bool) $accessState['is_read_only'],
             'readOnlyReason' => $accessState['reason'],
             'isWeekendRestriction' => $isWeekendRestriction,
@@ -267,7 +269,7 @@ class InternProjectBoardController extends Controller
             abort(403);
         }
 
-        if (! $user->canManageAllProjects()) {
+        if (! $user->isAdmin()) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }

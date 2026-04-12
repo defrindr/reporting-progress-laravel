@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -6,8 +7,68 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+:root {
+    --app-bg: #edf2f7;
+    --app-panel: #ffffff;
+    --app-border: #d9e2ec;
+    --app-sidebar-bg: #0f172a;
+    --app-sidebar-accent: #1e293b;
+    --app-sidebar-text: #cbd5e1;
+    --app-sidebar-active-bg: #2563eb;
+    --app-sidebar-active-text: #ffffff;
+}
+
+body {
+    background:
+        radial-gradient(circle at 15% 10%, #dbeafe 0%, transparent 35%),
+        radial-gradient(circle at 85% 20%, #cffafe 0%, transparent 30%),
+        var(--app-bg);
+}
+
+.app-shell {
+    min-height: 100vh;
+}
+
+.app-sidebar {
+    background: linear-gradient(165deg, var(--app-sidebar-bg), #111827);
+}
+
+.app-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    border-radius: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    color: var(--app-sidebar-text);
+    transition: all 0.2s ease;
+}
+
+.app-sidebar-link:hover {
+    background: rgba(148, 163, 184, 0.14);
+    color: #f8fafc;
+}
+
+.app-sidebar-link-active {
+    background: var(--app-sidebar-active-bg);
+    color: var(--app-sidebar-active-text);
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.25);
+}
+
+.app-content-panel {
+    background: color-mix(in srgb, var(--app-panel) 92%, #e2e8f0 8%);
+    border: 1px solid var(--app-border);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
+.kpi-card {
+    border: 1px solid #dbe3ef;
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #ffffff, #f8fbff);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
 }
 
 dialog[open] {

@@ -12,7 +12,17 @@
     $isWeekendRestriction = (bool) ($isWeekendRestriction ?? false);
     $nextWeekStartDate = $nextWeekStartDate ?? null;
     $viewMode = $viewMode ?? 'kanban';
+    $canReassign = (bool) ($canReassign ?? false);
     $filters = $filters ?? [];
+    $hasFilterQuery = collect(request()->except(['page', 'view_mode']))
+        ->filter(function ($value): bool {
+            if (is_array($value)) {
+                return $value !== [];
+            }
+
+            return $value !== null && $value !== '';
+        })
+        ->isNotEmpty();
 @endphp
 
 @section('content')
@@ -37,95 +47,95 @@
             </article>
         @endif
 
-        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <form method="GET" action="{{ route('projects.board') }}" class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <input type="hidden" name="view_mode" value="{{ $viewMode }}">
+        <details class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" @if($hasFilterQuery) open @endif>
+            <summary class="flex cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
+                <span>Filter Sprint & Task</span>
+                <svg class="h-5 w-5 shrink-0 transition duration-300 group-open:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 9l-7 7-7-7" />
+                </svg>
+            </summary>
 
-                <select name="sprint_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    <option value="">Pilih Sprint</option>
-                    @foreach ($sprints as $sprint)
-                        <option value="{{ $sprint->id }}" @selected($selectedSprint?->id === $sprint->id)>
-                            {{ $sprint->name }} ({{ $sprint->institution?->name ?? '-' }})
-                        </option>
-                    @endforeach
-                </select>
+            <div class="mt-4 space-y-4 border-t border-slate-100 pt-4">
+                <form method="GET" action="{{ route('projects.board') }}" class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <input type="hidden" name="view_mode" value="{{ $viewMode }}">
 
-                <select name="project_spec_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    <option value="">Semua Project</option>
-                    @foreach ($projectFilters as $projectOption)
-                        <option value="{{ $projectOption->id }}" @selected((int) ($filters['project_spec_id'] ?? 0) === (int) $projectOption->id)>
-                            {{ $projectOption->title }}
-                        </option>
-                    @endforeach
-                </select>
-
-                @if ($isManager)
-                    <select name="assignee_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                        <option value="">Semua Intern</option>
-                        @foreach ($assigneeFilters as $assigneeOption)
-                            <option value="{{ $assigneeOption->id }}" @selected((int) ($filters['assignee_id'] ?? 0) === (int) $assigneeOption->id)>
-                                {{ $assigneeOption->name }}
+                    <select name="sprint_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                        <option value="">Pilih Sprint</option>
+                        @foreach ($sprints as $sprint)
+                            <option value="{{ $sprint->id }}" @selected($selectedSprint?->id === $sprint->id)>
+                                {{ $sprint->name }} ({{ $sprint->institution?->name ?? '-' }})
                             </option>
                         @endforeach
                     </select>
+
+                    <select name="project_spec_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                        <option value="">Semua Project</option>
+                        @foreach ($projectFilters as $projectOption)
+                            <option value="{{ $projectOption->id }}" @selected((int) ($filters['project_spec_id'] ?? 0) === (int) $projectOption->id)>
+                                {{ $projectOption->title }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    @if ($isManager)
+                        <select name="assignee_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                            <option value="">Semua Intern</option>
+                            @foreach ($assigneeFilters as $assigneeOption)
+                                <option value="{{ $assigneeOption->id }}" @selected((int) ($filters['assignee_id'] ?? 0) === (int) $assigneeOption->id)>
+                                    {{ $assigneeOption->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @endif
+
+                    <select name="status" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                        <option value="">Semua Status</option>
+                        <option value="todo" @selected(($filters['status'] ?? null) === 'todo')>todo</option>
+                        <option value="doing" @selected(($filters['status'] ?? null) === 'doing')>doing</option>
+                        <option value="done" @selected(($filters['status'] ?? null) === 'done')>done</option>
+                    </select>
+
+                    <label class="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-700">
+                        <input type="checkbox" name="overdue" value="1" class="h-4 w-4 rounded border-slate-300 text-slate-900"
+                            @checked(!empty($filters['overdue']))>
+                        Overdue saja
+                    </label>
+
+                    <input name="keyword" type="text" value="{{ $filters['keyword'] ?? '' }}"
+                        placeholder="Cari task/deskripsi/project..."
+                        class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm md:col-span-2 xl:col-span-1">
+
+                    <div class="flex gap-2 md:col-span-2 xl:col-span-4">
+                        <button type="submit"
+                            class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50">Terapkan
+                            Filter</button>
+                        <a href="{{ route('projects.board') }}"
+                            class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+                    </div>
+                </form>
+
+                @if ($selectedSprint)
+                    <p class="text-xs text-slate-500">Sprint aktif: {{ $selectedSprint->name }}
+                        ({{ $selectedSprint->start_date->toDateString() }} - {{ $selectedSprint->end_date->toDateString() }})
+                    </p>
+
+                    <div class="flex flex-wrap gap-2">
+                        @if ($previousSprintId)
+                            <a href="{{ route('projects.board', array_merge(request()->except('page'), ['sprint_id' => $previousSprintId])) }}"
+                                class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week
+                                Sebelumnya</a>
+                        @endif
+                        @if ($nextSprintId)
+                            <a href="{{ route('projects.board', array_merge(request()->except('page'), ['sprint_id' => $nextSprintId])) }}"
+                                class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week
+                                Berikutnya</a>
+                        @endif
+                    </div>
                 @else
-                    <select name="status" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                        <option value="">Semua Status</option>
-                        <option value="todo" @selected(($filters['status'] ?? null) === 'todo')>todo</option>
-                        <option value="doing" @selected(($filters['status'] ?? null) === 'doing')>doing</option>
-                        <option value="done" @selected(($filters['status'] ?? null) === 'done')>done</option>
-                    </select>
+                    <p class="text-xs text-rose-600">Belum ada sprint tersedia untuk akun ini.</p>
                 @endif
-
-                @if ($isManager)
-                    <select name="status" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                        <option value="">Semua Status</option>
-                        <option value="todo" @selected(($filters['status'] ?? null) === 'todo')>todo</option>
-                        <option value="doing" @selected(($filters['status'] ?? null) === 'doing')>doing</option>
-                        <option value="done" @selected(($filters['status'] ?? null) === 'done')>done</option>
-                    </select>
-                @endif
-
-                <label class="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-700">
-                    <input type="checkbox" name="overdue" value="1" class="h-4 w-4 rounded border-slate-300 text-slate-900"
-                        @checked(!empty($filters['overdue']))>
-                    Overdue saja
-                </label>
-
-                <input name="keyword" type="text" value="{{ $filters['keyword'] ?? '' }}"
-                    placeholder="Cari task/deskripsi/project..."
-                    class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm md:col-span-2 xl:col-span-1">
-
-                <div class="flex gap-2 md:col-span-2 xl:col-span-4">
-                    <button type="submit"
-                        class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50">Terapkan
-                        Filter</button>
-                    <a href="{{ route('projects.board') }}"
-                        class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
-                </div>
-            </form>
-
-            @if ($selectedSprint)
-                <p class="mt-3 text-xs text-slate-500">Sprint aktif: {{ $selectedSprint->name }}
-                    ({{ $selectedSprint->start_date->toDateString() }} - {{ $selectedSprint->end_date->toDateString() }})
-                </p>
-
-                <div class="mt-3 flex flex-wrap gap-2">
-                    @if ($previousSprintId)
-                        <a href="{{ route('projects.board', array_merge(request()->except('page'), ['sprint_id' => $previousSprintId])) }}"
-                            class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week
-                            Sebelumnya</a>
-                    @endif
-                    @if ($nextSprintId)
-                        <a href="{{ route('projects.board', array_merge(request()->except('page'), ['sprint_id' => $nextSprintId])) }}"
-                            class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50">Week
-                            Berikutnya</a>
-                    @endif
-                </div>
-            @else
-                <p class="mt-3 text-xs text-rose-600">Belum ada sprint tersedia untuk akun ini.</p>
-            @endif
-        </article>
+            </div>
+        </details>
 
         @if ($isManager)
             <nav class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
@@ -251,7 +261,7 @@
                                     <p class="mt-3 text-xs font-medium text-amber-700">Status dikunci karena akun intern read-only.</p>
                                 @endif
 
-                                @if ($isManager && $project->status === 'todo')
+                                @if ($canReassign && $project->status === 'todo')
                                     @if ($assigneeFilters->isNotEmpty())
                                         <form method="POST" action="{{ route('projects.reassign', $project) }}"
                                             class="mt-3 flex items-center gap-2 text-xs">
@@ -339,7 +349,9 @@
                             <th class="px-3 py-2">Priority</th>
                             <th class="px-3 py-2">Status</th>
                             <th class="px-3 py-2">Creator</th>
-                            <th class="px-3 py-2">Aksi</th>
+                            @if ($canReassign)
+                                <th class="px-3 py-2">Aksi</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -353,33 +365,35 @@
                                 <td class="px-3 py-2">{{ $task->priority }}</td>
                                 <td class="px-3 py-2">{{ $task->status }}</td>
                                 <td class="px-3 py-2">{{ $task->creator?->name ?? '-' }}</td>
-                                <td class="px-3 py-2">
-                                    @if ($task->status === 'todo')
-                                        @if ($assigneeFilters->isNotEmpty())
-                                            <form method="POST" action="{{ route('projects.reassign', $task) }}" class="flex items-center gap-2">
-                                                @csrf
-                                                @method('PATCH')
-                                                <select name="assignee_id" class="rounded-lg border border-slate-300 px-2 py-1.5 text-xs" required>
-                                                    @foreach ($assigneeFilters as $assigneeOption)
-                                                        <option value="{{ $assigneeOption->id }}" @selected((int) $task->assignee_id === (int) $assigneeOption->id)>
-                                                            {{ $assigneeOption->name }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                                <button type="submit"
-                                                    class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50">Simpan</button>
-                                            </form>
+                                @if ($canReassign)
+                                    <td class="px-3 py-2">
+                                        @if ($task->status === 'todo')
+                                            @if ($assigneeFilters->isNotEmpty())
+                                                <form method="POST" action="{{ route('projects.reassign', $task) }}" class="flex items-center gap-2">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <select name="assignee_id" class="rounded-lg border border-slate-300 px-2 py-1.5 text-xs" required>
+                                                        @foreach ($assigneeFilters as $assigneeOption)
+                                                            <option value="{{ $assigneeOption->id }}" @selected((int) $task->assignee_id === (int) $assigneeOption->id)>
+                                                                {{ $assigneeOption->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <button type="submit"
+                                                        class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50">Simpan</button>
+                                                </form>
+                                            @else
+                                                <span class="text-xs text-amber-700">Tidak ada intern aktif</span>
+                                            @endif
                                         @else
-                                            <span class="text-xs text-amber-700">Tidak ada intern aktif</span>
+                                            <span class="text-xs text-slate-400">Hanya todo</span>
                                         @endif
-                                    @else
-                                        <span class="text-xs text-slate-400">Hanya todo</span>
-                                    @endif
-                                </td>
+                                    </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-3 py-6 text-center text-sm text-slate-500">Tidak ada task
+                                <td colspan="{{ $canReassign ? 9 : 8 }}" class="px-3 py-6 text-center text-sm text-slate-500">Tidak ada task
                                     pada sprint ini.</td>
                             </tr>
                         @endforelse

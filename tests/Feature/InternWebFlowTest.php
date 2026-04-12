@@ -219,7 +219,7 @@ class InternWebFlowTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_supervisor_can_reassign_todo_task_and_history_is_recorded(): void
+    public function test_admin_can_reassign_todo_task_and_history_is_recorded(): void
     {
         $institution = Institution::create([
             'name' => 'Kampus Reassign',
@@ -235,8 +235,8 @@ class InternWebFlowTest extends TestCase
             'holidays' => [],
         ]);
 
-        $supervisor = User::factory()->create(['institution_id' => $institution->id]);
-        $supervisor->assignRole('Supervisor');
+        $admin = User::factory()->create(['institution_id' => $institution->id]);
+        $admin->assignRole('Admin');
 
         $internA = User::factory()->create(['institution_id' => $institution->id]);
         $internA->assignRole('Intern');
@@ -248,11 +248,11 @@ class InternWebFlowTest extends TestCase
             'title' => 'Task Todo Reassign',
             'description' => 'Task untuk diuji reassign',
             'assignee_id' => $internA->id,
-            'created_by' => $supervisor->id,
+            'created_by' => $admin->id,
             'status' => 'todo',
         ]);
 
-        $this->actingAs($supervisor)
+        $this->actingAs($admin)
             ->from('/projects/board')
             ->patch('/projects/'.$task->id.'/reassign', [
                 'assignee_id' => $internB->id,
@@ -268,11 +268,11 @@ class InternWebFlowTest extends TestCase
             'subject_type' => Project::class,
             'subject_id' => $task->id,
             'event' => 'reassigned',
-            'description' => sprintf('reassign task from %s to %s by %s', $internA->name, $internB->name, $supervisor->name),
+            'description' => sprintf('reassign task from %s to %s by %s', $internA->name, $internB->name, $admin->name),
         ]);
     }
 
-    public function test_supervisor_cannot_reassign_non_todo_task(): void
+    public function test_supervisor_cannot_reassign_todo_task(): void
     {
         $institution = Institution::create([
             'name' => 'Kampus Reassign Locked',
@@ -298,11 +298,11 @@ class InternWebFlowTest extends TestCase
         $internB->assignRole('Intern');
 
         $task = Project::create([
-            'title' => 'Task Doing Reassign',
-            'description' => 'Task doing tidak boleh reassign',
+            'title' => 'Task Todo Reassign Supervisor',
+            'description' => 'Supervisor tidak boleh reassign',
             'assignee_id' => $internA->id,
             'created_by' => $supervisor->id,
-            'status' => 'doing',
+            'status' => 'todo',
         ]);
 
         $this->actingAs($supervisor)
@@ -310,13 +310,38 @@ class InternWebFlowTest extends TestCase
             ->patch('/projects/'.$task->id.'/reassign', [
                 'assignee_id' => $internB->id,
             ])
-            ->assertRedirect('/projects/board')
-            ->assertSessionHasErrors('assignee_id');
+            ->assertStatus(403);
 
         $this->assertDatabaseHas('projects', [
             'id' => $task->id,
             'assignee_id' => $internA->id,
         ]);
+    }
+
+    public function test_supervisor_and_admin_logbook_page_hides_form(): void
+    {
+        $institution = Institution::create([
+            'name' => 'Kampus Monitor Logbook',
+            'type' => 'university',
+        ]);
+
+        $supervisor = User::factory()->create(['institution_id' => $institution->id]);
+        $supervisor->assignRole('Supervisor');
+
+        $admin = User::factory()->create(['institution_id' => $institution->id]);
+        $admin->assignRole('Admin');
+
+        $this->actingAs($supervisor)
+            ->get('/logbook')
+            ->assertOk()
+            ->assertDontSee('Form Logbook Harian')
+            ->assertSee('Riwayat Logbook Intern');
+
+        $this->actingAs($admin)
+            ->get('/logbook')
+            ->assertOk()
+            ->assertDontSee('Form Logbook Harian')
+            ->assertSee('Riwayat Logbook Intern');
     }
 
     public function test_intern_can_generate_weekly_resume_from_board_tasks_with_local_ai(): void

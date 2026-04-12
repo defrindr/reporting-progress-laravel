@@ -7,58 +7,128 @@
     <title>{{ $title ?? 'Internship Logbook' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[radial-gradient(circle_at_top,#dbeafe,#f8fafc_35%,#f1f5f9)] text-slate-900">
-    <div class="mx-auto flex min-h-screen w-full max-w-375 gap-4 p-4 sm:p-6">
-        <aside class="w-full max-w-70 rounded-3xl border border-white/50 bg-white/45 p-5 shadow-xl shadow-slate-900/5 backdrop-blur-xl">
-            <a href="{{ route('dashboard') }}" class="mb-6 block text-xl font-semibold tracking-tight">Internship Logbook</a>
+<body class="text-slate-900">
+    @php
+        $authUser = auth()->user();
+        $isAdmin = $authUser?->isAdmin() ?? false;
+        $isManager = $authUser?->canManageAllProjects() ?? false;
+        $sidebarLinkClass = static fn (bool $active): string => $active ? 'app-sidebar-link app-sidebar-link-active' : 'app-sidebar-link';
+    @endphp
 
-            @if (auth()->check())
-                <div class="mb-5 rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3">
-                    <p class="text-xs uppercase tracking-wide text-slate-500">Signed in</p>
-                    <p class="mt-1 text-sm font-semibold">{{ auth()->user()->name }}</p>
-                    <p class="text-xs text-slate-500">{{ auth()->user()->email }}</p>
+    @if ($authUser)
+        <div class="app-shell lg:pl-76">
+            <aside id="app-sidebar" class="app-sidebar fixed inset-y-3 left-3 z-40 flex w-72 -translate-x-[120%] flex-col rounded-3xl border border-slate-800/80 p-5 shadow-2xl shadow-slate-950/45 transition-transform duration-300 lg:translate-x-0">
+                <a href="{{ route('dashboard') }}" class="mb-6 block">
+                    <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Internship Suite</p>
+                    <p class="mt-1 text-xl font-semibold tracking-tight text-white">Progress Console</p>
+                </a>
+
+                <div class="mb-5 rounded-2xl border border-slate-700 bg-slate-900/45 px-4 py-3">
+                    <p class="text-xs uppercase tracking-wide text-slate-500">Signed In</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-100">{{ $authUser->name }}</p>
+                    <p class="text-xs text-slate-400">{{ $authUser->email }}</p>
                 </div>
 
-                <nav class="space-y-1 text-sm">
-                    @if (auth()->user()->isAdmin())
-                        <a href="{{ route('admin.dashboard') }}" class="block rounded-xl px-3 py-2 hover:bg-white/80">Admin Dashboard</a>
-                        <a href="{{ route('admin.users.index') }}" class="block rounded-xl px-3 py-2 hover:bg-white/80">CRUD Users</a>
-                        <a href="{{ route('admin.roles.index') }}" class="block rounded-xl px-3 py-2 hover:bg-white/80">CRUD Roles</a>
-                        <a href="{{ route('admin.institutions.index') }}" class="block rounded-xl px-3 py-2 hover:bg-white/80">CRUD Institutions</a>
-                        <a href="{{ route('admin.periods.index') }}" class="block rounded-xl px-3 py-2 hover:bg-white/80">CRUD Periods</a>
-                        <a href="{{ route('admin.projects.index') }}" class="block rounded-xl px-3 py-2 hover:bg-white/80">Project Specs</a>
+                <nav class="space-y-1.5 text-sm">
+                    @if ($isAdmin)
+                        <a href="{{ route('admin.dashboard') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.dashboard')) }}">Admin Dashboard</a>
+                        <a href="{{ route('admin.users.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.users.*')) }}">Users</a>
+                        <a href="{{ route('admin.roles.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.roles.*')) }}">Roles</a>
+                        <a href="{{ route('admin.institutions.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.institutions.*')) }}">Institutions</a>
+                        <a href="{{ route('admin.periods.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.periods.*')) }}">Periods</a>
+                        <a href="{{ route('admin.projects.index') }}" class="{{ $sidebarLinkClass(request()->routeIs('admin.projects.*')) }}">Project Specs</a>
                     @endif
 
-                    <a href="{{ route('logbook.form') }}" class="block rounded-xl px-3 py-2 hover:bg-white/80">Logbook</a>
-                    <a href="{{ route('projects.board') }}" class="block rounded-xl px-3 py-2 hover:bg-white/80">Task Board</a>
+                    <a href="{{ route('projects.board') }}" class="{{ $sidebarLinkClass(request()->routeIs('projects.*')) }}">Task Board</a>
+                    <a href="{{ route('logbook.form') }}" class="{{ $sidebarLinkClass(request()->routeIs('logbook.*')) }}">{{ $isManager ? 'Logbook Monitoring' : 'Logbook' }}</a>
+                    <a href="{{ route('profile.password.edit') }}" class="{{ $sidebarLinkClass(request()->routeIs('profile.password.*')) }}">Edit Password</a>
                 </nav>
 
-                <form method="POST" action="{{ route('logout') }}" class="mt-6">
+                <form method="POST" action="{{ route('logout') }}" class="mt-auto pt-5">
                     @csrf
-                    <button type="submit" class="w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700">Logout</button>
+                    <button type="submit" class="w-full rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-white">Logout</button>
                 </form>
-            @endif
-        </aside>
+            </aside>
 
-        <main class="flex-1 rounded-3xl border border-white/60 bg-white/55 p-4 shadow-xl shadow-slate-900/5 backdrop-blur-xl sm:p-6">
-            <header class="mb-5 rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3">
-                <h1 class="text-base font-semibold tracking-tight">{{ $title ?? 'Workspace' }}</h1>
-            </header>
+            <div id="sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-900/45 lg:hidden"></div>
 
-            @if (session('status'))
-                <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                    {{ session('status') }}
-                </div>
-            @endif
+            <main class="min-h-screen p-3 sm:p-5 lg:p-6">
+                <header class="app-content-panel sticky top-3 z-20 mb-5 rounded-2xl px-4 py-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <button id="sidebar-toggle" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm lg:hidden">
+                                <span class="sr-only">Open menu</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
 
-            @if ($errors->any())
-                <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    {{ $errors->first() }}
-                </div>
-            @endif
+                            <div>
+                                <h1 class="text-base font-semibold tracking-tight">{{ $title ?? 'Workspace' }}</h1>
+                                <p class="text-xs text-slate-500">{{ now()->translatedFormat('l, d F Y') }}</p>
+                            </div>
+                        </div>
 
-            @yield('content')
-        </main>
-    </div>
+                        <div class="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 sm:block">
+                            {{ $isManager ? 'Mode Monitoring' : 'Mode Operasional' }}
+                        </div>
+                    </div>
+                </header>
+
+                @if (session('status'))
+                    <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        {{ session('status') }}
+                    </div>
+                @endif
+
+                @if ($errors->any())
+                    <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        {{ $errors->first() }}
+                    </div>
+                @endif
+
+                @yield('content')
+            </main>
+        </div>
+
+        <script>
+            (function() {
+                const sidebar = document.getElementById('app-sidebar');
+                const toggle = document.getElementById('sidebar-toggle');
+                const backdrop = document.getElementById('sidebar-backdrop');
+
+                if (!sidebar || !toggle || !backdrop) {
+                    return;
+                }
+
+                const openSidebar = () => {
+                    sidebar.classList.remove('-translate-x-[120%]');
+                    backdrop.classList.remove('hidden');
+                };
+
+                const closeSidebar = () => {
+                    if (window.innerWidth >= 1024) {
+                        return;
+                    }
+
+                    sidebar.classList.add('-translate-x-[120%]');
+                    backdrop.classList.add('hidden');
+                };
+
+                toggle.addEventListener('click', openSidebar);
+                backdrop.addEventListener('click', closeSidebar);
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth >= 1024) {
+                        backdrop.classList.add('hidden');
+                        sidebar.classList.remove('-translate-x-[120%]');
+                    } else {
+                        sidebar.classList.add('-translate-x-[120%]');
+                    }
+                });
+            })();
+        </script>
+    @else
+        @yield('content')
+    @endif
 </body>
 </html>

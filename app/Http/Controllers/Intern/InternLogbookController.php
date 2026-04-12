@@ -7,6 +7,7 @@ use App\Http\Requests\LogbookRequest;
 use App\Models\Logbook;
 use App\Models\Period;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,23 +22,45 @@ class InternLogbookController extends Controller
     public function index(): View
     {
         $user = Auth::user();
-        $accessState = $this->internAccessState($user);
+        $isManager = $user instanceof User && $user->canManageAllProjects();
+        $managerUser = $user instanceof User ? $user : null;
+        $accessState = $isManager
+            ? ['is_read_only' => true, 'reason' => 'Supervisor/Admin hanya dapat melihat data logbook.']
+            : $this->internAccessState($user);
+
+        $logbooksQuery = Logbook::query()->with(['period:id,name', 'user:id,name,institution_id']);
+
+        if ($isManager) {
+            if ($managerUser && ! $managerUser->isAdmin() && $managerUser->institution_id) {
+                $logbooksQuery->whereHas('user', function ($query) use ($managerUser): void {
+                    $query->where('institution_id', $managerUser->institution_id);
+                });
+            }
+        } else {
+            $logbooksQuery->where('user_id', $user?->id);
+        }
 
         return view('logbook', [
-            'logbooks' => Logbook::query()
-                ->where('user_id', $user->id)
-                ->with('period:id,name')
+            'logbooks' => $logbooksQuery
                 ->latest('report_date')
                 ->get(),
+            'isManager' => $isManager,
             'isInternReadOnly' => (bool) $accessState['is_read_only'],
             'readOnlyReason' => $accessState['reason'],
-            'isWeekendLock' => now()->isWeekend(),
+            'isWeekendLock' => ! $isManager && now()->isWeekend(),
         ]);
     }
 
     public function store(LogbookRequest $request): RedirectResponse
     {
         $user = $request->user();
+
+        if ($user instanceof User && $user->canManageAllProjects()) {
+            return back()->withErrors([
+                'report_date' => 'Supervisor/Admin hanya dapat melihat data logbook.',
+            ]);
+        }
+
         $accessState = $this->internAccessState($user);
 
         if ($accessState['is_read_only']) {
@@ -94,6 +117,13 @@ class InternLogbookController extends Controller
         ]);
 
         $user = $request->user();
+
+        if ($user instanceof User && $user->canManageAllProjects()) {
+            return response()->json([
+                'message' => 'Supervisor/Admin hanya dapat melihat data logbook.',
+            ], 403);
+        }
+
         $scope = (string) ($validated['scope'] ?? 'daily');
         $useAi = (bool) ($validated['use_ai'] ?? false);
 

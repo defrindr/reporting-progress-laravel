@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AuthSessionController;
 use App\Http\Controllers\Intern\InternLogbookController;
 use App\Http\Controllers\Intern\InternProjectBoardController;
+use App\Http\Controllers\ProfilePasswordController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/logbook', [InternLogbookController::class, 'index'])->name('logbook.form');
     Route::post('/logbook', [InternLogbookController::class, 'store'])->name('logbook.store');
     Route::get('/logbook/task-resume', [InternLogbookController::class, 'taskResume'])->name('logbook.task-resume');
+
+    Route::get('/profile/password', [ProfilePasswordController::class, 'edit'])->name('profile.password.edit');
+    Route::put('/profile/password', [ProfilePasswordController::class, 'update'])->name('profile.password.update');
 
     Route::get('/projects/board', [InternProjectBoardController::class, 'index'])->name('projects.board');
     Route::post('/projects/tasks', [InternProjectBoardController::class, 'storeTask'])->name('projects.tasks.store');
