@@ -13,7 +13,7 @@ class AdminRoleController extends Controller
     public function index(): View
     {
         return view('admin.roles.index', [
-            'roles' => Role::query()->orderBy('name')->get(),
+            'roles' => Role::query()->orderBy('name')->paginate(20)->withQueryString(),
         ]);
     }
 

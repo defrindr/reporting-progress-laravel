@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Intern;
 
 use App\Http\Controllers\Controller;
+use App\Models\Period;
 use App\Models\Project;
 use App\Models\ProjectSpec;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -24,22 +27,48 @@ class InternProjectBoardController extends Controller
         }
 
         $isManager = $user->canManageAllProjects();
-        $taskDate = $request->string('task_date')->toString();
+        $sprints = Period::query()
+            ->with('institution:id,name')
+            ->when(! $isManager, fn ($query) => $query->where('institution_id', $user->institution_id))
+            ->orderByDesc('start_date')
+            ->get();
+
+        $selectedSprintId = $request->integer('sprint_id');
+        $selectedSprint = $sprints->firstWhere('id', $selectedSprintId);
+
+        if (! $selectedSprint) {
+            $selectedSprint = $sprints->first(function (Period $period): bool {
+                $today = now()->toDateString();
+                $startDate = Carbon::parse((string) $period->start_date)->toDateString();
+                $endDate = Carbon::parse((string) $period->end_date)->toDateString();
+
+                return $today >= $startDate && $today <= $endDate;
+            }) ?? $sprints->first();
+        }
 
         $assignedSpecs = $isManager
             ? ProjectSpec::query()->with('assignedInterns:id,name')->latest()->get()
             : $user->assignedProjectSpecs()->latest('project_specs.id')->get();
 
-        $tasks = Project::query()
+        $taskQuery = Project::query()
             ->with(['spec:id,title', 'assignee:id,name', 'creator:id,name', 'comments.user:id,name'])
             ->when(! $isManager, fn ($query) => $query->where('assignee_id', $user->id))
-            ->when($taskDate, fn ($query) => $query->whereDate('created_at', $taskDate))
-            ->orderByDesc('id')
-            ->get();
+            ->orderByDesc('id');
+
+        if ($selectedSprint) {
+            $taskQuery
+                ->whereDate('created_at', '>=', $selectedSprint->start_date)
+                ->whereDate('created_at', '<=', $selectedSprint->end_date);
+        } else {
+            $taskQuery->whereRaw('1 = 0');
+        }
+
+        $tasks = $taskQuery->paginate(90)->withQueryString();
+        $taskItems = $tasks->getCollection();
 
         $activityByProject = Activity::query()
             ->where('subject_type', Project::class)
-            ->whereIn('subject_id', $tasks->pluck('id'))
+            ->whereIn('subject_id', $taskItems->pluck('id'))
             ->latest()
             ->get(['id', 'subject_id', 'description', 'event', 'created_at'])
             ->groupBy('subject_id');
@@ -49,7 +78,8 @@ class InternProjectBoardController extends Controller
             'assignedSpecs' => $assignedSpecs,
             'activityByProject' => $activityByProject,
             'isManager' => $isManager,
-            'taskDate' => $taskDate,
+            'sprints' => $sprints,
+            'selectedSprint' => $selectedSprint,
         ]);
     }
 
@@ -91,7 +121,7 @@ class InternProjectBoardController extends Controller
         return back()->with('status', 'Task berhasil dibuat dari spec yang di-assign.');
     }
 
-    public function setStatus(Request $request, Project $project): RedirectResponse
+    public function setStatus(Request $request, Project $project): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in(['todo', 'doing', 'done'])],
@@ -100,15 +130,33 @@ class InternProjectBoardController extends Controller
         $user = $request->user();
 
         if (! $user instanceof User) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthenticated'], 401);
+            }
+
             abort(403);
         }
 
         // Sesuai requirement terbaru: intern pemilik task yang mengubah status.
         if ($project->assignee_id !== $user->id) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
             abort(403);
         }
 
         $project->update(['status' => $validated['status']]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Status task berhasil diperbarui.',
+                'data' => [
+                    'id' => $project->id,
+                    'status' => $project->status,
+                ],
+            ]);
+        }
 
         return back()->with('status', 'Status task berhasil diperbarui.');
     }

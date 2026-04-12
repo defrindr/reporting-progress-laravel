@@ -36,5 +36,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $admin->assignRole('Admin');
+
+        if ((bool) env('SEED_LARGE_DATASET', false)) {
+            $this->call(LargeDatasetSeeder::class);
+        }
     }
 }

@@ -6,33 +6,39 @@
         'doing' => 'Doing',
         'done' => 'Done',
     ];
+
+    $taskItems = $tasks->getCollection();
 @endphp
 
 @section('content')
     <section class="space-y-6">
         <header>
             <h1 class="text-2xl font-semibold tracking-tight">Project Board</h1>
-            <p class="mt-1 text-sm text-slate-500">Intern membuat task dari project spec yang di-assign. Status task bisa maju atau mundur.</p>
+            <p class="mt-1 text-sm text-slate-500">Board kanban ditampilkan per sprint dan mendukung drag-and-drop status task.</p>
         </header>
 
-        @if ($isManager)
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div class="flex flex-wrap items-end justify-between gap-3">
-                    <div>
-                        <h2 class="text-lg font-semibold">Monitoring Task Harian</h2>
-                        <p class="text-sm text-slate-500">Filter task berdasarkan tanggal pembuatan untuk monitoring intern.</p>
-                    </div>
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <form method="GET" action="{{ route('projects.board') }}" class="grid gap-3 lg:grid-cols-[1fr_auto_auto]">
+                <select name="sprint_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <option value="">Pilih Sprint</option>
+                    @foreach ($sprints as $sprint)
+                        <option value="{{ $sprint->id }}" @selected($selectedSprint?->id === $sprint->id)>
+                            {{ $sprint->name }} ({{ $sprint->institution?->name ?? '-' }})
+                        </option>
+                    @endforeach
+                </select>
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50">Terapkan Sprint</button>
+                <a href="{{ route('projects.board') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50">Reset</a>
+            </form>
 
-                    <form method="GET" action="{{ route('projects.board') }}" class="flex items-center gap-2 text-sm">
-                        <input type="date" name="task_date" value="{{ $taskDate }}" class="rounded-lg border border-slate-300 px-3 py-2">
-                        <button type="submit" class="rounded-lg border border-slate-300 px-3 py-2 hover:bg-slate-50">Filter</button>
-                        @if ($taskDate)
-                            <a href="{{ route('projects.board') }}" class="rounded-lg border border-slate-300 px-3 py-2 hover:bg-slate-50">Reset</a>
-                        @endif
-                    </form>
-                </div>
-            </article>
-        @else
+            @if ($selectedSprint)
+                <p class="mt-3 text-xs text-slate-500">Sprint aktif: {{ $selectedSprint->name }} ({{ $selectedSprint->start_date->toDateString() }} - {{ $selectedSprint->end_date->toDateString() }})</p>
+            @else
+                <p class="mt-3 text-xs text-rose-600">Belum ada sprint tersedia untuk akun ini.</p>
+            @endif
+        </article>
+
+        @if (! $isManager)
             <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-semibold">Buat Task dari Project Spec</h2>
                 <p class="mt-1 text-sm text-slate-500">Pilih salah satu project spec yang di-assign ke akun intern kamu.</p>
@@ -52,21 +58,30 @@
             </article>
         @endif
 
-        <div class="grid gap-4 lg:grid-cols-3">
+        <div class="grid gap-4 lg:grid-cols-3" data-kanban-board>
             @foreach ($groups as $status => $label)
-                <article class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                <article class="kanban-drop-zone rounded-2xl border border-slate-200 bg-slate-50/70 p-4" data-drop-status="{{ $status }}">
                     <div class="mb-3 flex items-center justify-between">
                         <h2 class="text-sm font-semibold text-slate-800">{{ $label }}</h2>
-                        <span class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700">{{ $tasks->where('status', $status)->count() }}</span>
+                        <span class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700">{{ $taskItems->where('status', $status)->count() }}</span>
                     </div>
 
                     <div class="space-y-3">
-                        @forelse ($tasks->where('status', $status) as $project)
-                            <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                        @forelse ($taskItems->where('status', $status) as $project)
+                            @php($canDrag = ! $isManager && auth()->id() === $project->assignee_id)
+                            <div
+                                class="kanban-card rounded-xl border border-slate-200 bg-white p-3 shadow-sm {{ $canDrag ? 'cursor-grab' : '' }}"
+                                draggable="{{ $canDrag ? 'true' : 'false' }}"
+                                data-project-id="{{ $project->id }}"
+                                data-current-status="{{ $project->status }}">
                                 <h3 class="text-sm font-semibold text-slate-900">{{ $project->title }}</h3>
                                 <p class="mt-1 text-xs text-slate-500">Intern: {{ $project->assignee?->name ?? '-' }}</p>
                                 <p class="mt-1 text-xs text-slate-500">Spec: {{ $project->spec?->title ?? '-' }}</p>
                                 <p class="mt-2 text-sm text-slate-700">{{ $project->description ?: 'Tanpa deskripsi' }}</p>
+
+                                @if ($canDrag)
+                                    <p class="mt-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">Drag card ini ke kolom lain untuk ubah status</p>
+                                @endif
 
                                 @if (! $isManager && auth()->id() === $project->assignee_id)
                                     <form method="POST" action="{{ route('projects.status', $project) }}" class="mt-3 flex items-center gap-2 text-xs">
@@ -120,6 +135,10 @@
             @endforeach
         </div>
 
+        <div>
+            {{ $tasks->links() }}
+        </div>
+
         @if ($isManager)
             <article class="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 class="mb-3 text-base font-semibold">Tabel Monitoring Task</h2>
@@ -154,4 +173,84 @@
             </article>
         @endif
     </section>
+
+    <script>
+        (function () {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            const board = document.querySelector('[data-kanban-board]');
+
+            if (!csrfToken || !board) {
+                return;
+            }
+
+            let activeCard = null;
+
+            document.querySelectorAll('.kanban-card[draggable="true"]').forEach((card) => {
+                card.addEventListener('dragstart', () => {
+                    activeCard = card;
+                    card.classList.add('opacity-60');
+                });
+
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('opacity-60');
+                    activeCard = null;
+                });
+            });
+
+            document.querySelectorAll('.kanban-drop-zone').forEach((dropZone) => {
+                dropZone.addEventListener('dragover', (event) => {
+                    if (!activeCard) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    dropZone.classList.add('ring-2', 'ring-slate-300');
+                });
+
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('ring-2', 'ring-slate-300');
+                });
+
+                dropZone.addEventListener('drop', async (event) => {
+                    event.preventDefault();
+                    dropZone.classList.remove('ring-2', 'ring-slate-300');
+
+                    if (!activeCard) {
+                        return;
+                    }
+
+                    const nextStatus = dropZone.dataset.dropStatus;
+                    const currentStatus = activeCard.dataset.currentStatus;
+
+                    if (!nextStatus || currentStatus === nextStatus) {
+                        return;
+                    }
+
+                    const projectId = activeCard.dataset.projectId;
+
+                    try {
+                        const response = await fetch(`{{ url('/projects') }}/${projectId}/status`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                            },
+                            body: JSON.stringify({ status: nextStatus }),
+                        });
+
+                        if (!response.ok) {
+                            const payload = await response.json().catch(() => ({}));
+                            alert(payload.message || 'Gagal mengubah status task.');
+                            return;
+                        }
+
+                        window.location.reload();
+                    } catch (error) {
+                        alert('Terjadi error saat drag-and-drop status task.');
+                    }
+                });
+            });
+        })();
+    </script>
 @endsection

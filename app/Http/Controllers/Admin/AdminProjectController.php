@@ -17,13 +17,18 @@ class AdminProjectController extends Controller
         $taskDate = $request->string('task_date')->toString();
 
         return view('admin.projects.index', [
-            'specs' => ProjectSpec::query()->with('assignedInterns:id,name')->latest()->get(),
+            'specs' => ProjectSpec::query()
+                ->with('assignedInterns:id,name')
+                ->latest()
+                ->paginate(12, ['*'], 'spec_page')
+                ->withQueryString(),
             'interns' => User::query()->role('Intern')->orderBy('name')->get(['id', 'name']),
             'tasks' => Project::query()
                 ->with(['spec:id,title', 'assignee:id,name', 'creator:id,name'])
                 ->when($taskDate, fn ($query) => $query->whereDate('created_at', $taskDate))
                 ->latest()
-                ->get(),
+                ->paginate(25, ['*'], 'task_page')
+                ->withQueryString(),
             'taskDate' => $taskDate,
         ]);
     }

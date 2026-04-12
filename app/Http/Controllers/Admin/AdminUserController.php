@@ -17,7 +17,7 @@ class AdminUserController extends Controller
     public function index(): View
     {
         return view('admin.users.index', [
-            'users' => User::query()->with('roles')->orderBy('id')->get(),
+            'users' => User::query()->with(['roles', 'institution:id,name'])->orderByDesc('id')->paginate(20)->withQueryString(),
             'roles' => Role::query()->orderBy('name')->get(),
             'institutions' => Institution::query()->orderBy('name')->get(),
         ]);

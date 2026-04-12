@@ -14,7 +14,7 @@ class AdminInstitutionController extends Controller
     public function index(): View
     {
         return view('admin.institutions.index', [
-            'institutions' => Institution::query()->orderBy('name')->get(),
+            'institutions' => Institution::query()->orderBy('name')->paginate(20)->withQueryString(),
         ]);
     }
 

@@ -15,7 +15,7 @@ class AdminPeriodController extends Controller
     public function index(): View
     {
         return view('admin.periods.index', [
-            'periods' => Period::query()->with('institution:id,name,type')->orderByDesc('start_date')->get(),
+            'periods' => Period::query()->with('institution:id,name,type')->orderByDesc('start_date')->paginate(20)->withQueryString(),
             'universities' => Institution::query()->where('type', 'university')->orderBy('name')->get(['id', 'name']),
         ]);
     }
