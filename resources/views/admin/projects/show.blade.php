@@ -72,7 +72,6 @@
                                         data-edit-action="{{ route('admin.projects.backlogs.update', [$project, $backlog]) }}"
                                         data-title="{{ $backlog->title }}"
                                         data-description="{{ $backlog->description }}"
-                                        data-assignee-id="{{ $backlog->assignee_id }}"
                                         data-due-date="{{ optional($backlog->due_date)->toDateString() }}"
                                         data-priority="{{ $backlog->priority }}"
                                         data-status="{{ $backlog->status }}"
@@ -104,8 +103,14 @@
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <header class="mb-3">
                 <h2 class="text-lg font-semibold">Aktifkan Sprint</h2>
-                <p class="text-sm text-slate-500">Pilih backlog yang akan dinaikkan ke sprint otomatis (sprint aktif saat ini). Jika belum ada sprint aktif, sistem membuat sprint minggu ini.</p>
+                <p class="text-sm text-slate-500">Pilih backlog yang akan dinaikkan ke sprint otomatis (sprint aktif saat ini), lalu tentukan assignee intern aktif untuk tiap backlog terpilih.</p>
             </header>
+
+            @if ($interns->isEmpty())
+                <div class="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                    Belum ada intern project dengan periode internship aktif. Tambahkan intern aktif dulu sebelum aktivasi sprint.
+                </div>
+            @endif
 
             @if ($activationError)
                 <div class="mb-4 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -128,20 +133,33 @@
 
                 <div class="max-h-72 space-y-2 overflow-auto rounded-xl border border-slate-200 p-3">
                     @forelse ($activationCandidates as $candidate)
-                        <label class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                            <span>
-                                <span class="font-medium">{{ $candidate->title }}</span>
-                                <span class="block text-xs text-slate-500">{{ $candidate->assignee?->name ?? '-' }} | {{ $candidate->priority }} | {{ $candidate->status }}</span>
-                                <span class="block text-xs text-slate-400">Sprint saat ini: {{ $candidate->sprint?->name ?? 'Backlog' }}</span>
-                            </span>
-                            <input type="checkbox" name="backlog_ids[]" value="{{ $candidate->id }}" class="rounded border-slate-300" @checked(in_array($candidate->id, $activeBacklogIds, true))>
-                        </label>
+                        <div class="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                            <div class="flex items-start justify-between gap-3">
+                                <span>
+                                    <span class="font-medium">{{ $candidate->title }}</span>
+                                    <span class="block text-xs text-slate-500">{{ $candidate->assignee?->name ?? 'Belum di-assign' }} | {{ $candidate->priority }} | {{ $candidate->status }}</span>
+                                    <span class="block text-xs text-slate-400">Sprint saat ini: {{ $candidate->sprint?->name ?? 'Backlog' }}</span>
+                                </span>
+                                <input type="checkbox" name="backlog_ids[]" value="{{ $candidate->id }}" class="rounded border-slate-300" @checked(in_array($candidate->id, $activeBacklogIds, true))>
+                            </div>
+
+                            <div class="mt-2">
+                                <select name="assignees[{{ $candidate->id }}]" class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs" @disabled($interns->isEmpty())>
+                                    <option value="">Pilih Assignee saat masuk sprint</option>
+                                    @foreach ($interns as $intern)
+                                        <option value="{{ $intern->id }}" @selected((int) $candidate->assignee_id === (int) $intern->id)>
+                                            {{ $intern->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
                     @empty
                         <p class="text-sm text-slate-500">Belum ada backlog untuk diaktifkan.</p>
                     @endforelse
                 </div>
 
-                <button type="submit" @disabled($activationError) class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400">Aktifkan Sprint</button>
+                <button type="submit" @disabled($activationError || $interns->isEmpty()) class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400">Aktifkan Sprint</button>
             </form>
         </article>
     </section>
@@ -159,13 +177,6 @@
                 <input name="title" type="text" required placeholder="Nama task" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
                 <textarea name="description" rows="3" placeholder="Description" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2"></textarea>
 
-                <select name="assignee_id" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    <option value="">Assign to</option>
-                    @foreach ($interns as $intern)
-                        <option value="{{ $intern->id }}">{{ $intern->name }}</option>
-                    @endforeach
-                </select>
-
                 <input name="due_date" type="date" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
 
                 <select name="priority" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
@@ -175,11 +186,10 @@
                     <option value="critical">critical</option>
                 </select>
 
-                <select name="status" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    <option value="todo">todo</option>
-                    <option value="doing">doing</option>
-                    <option value="done">done</option>
-                </select>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
+                    Backlog baru otomatis status <span class="font-semibold">todo</span> dan belum punya assignee.
+                    Assignee ditentukan saat backlog dimasukkan ke sprint.
+                </div>
             </div>
 
             <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan Backlog</button>
@@ -199,12 +209,6 @@
             <div class="grid gap-3 lg:grid-cols-2">
                 <input id="edit-backlog-title" name="title" type="text" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
                 <textarea id="edit-backlog-description" name="description" rows="3" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2"></textarea>
-
-                <select id="edit-backlog-assignee" name="assignee_id" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    @foreach ($interns as $intern)
-                        <option value="{{ $intern->id }}">{{ $intern->name }}</option>
-                    @endforeach
-                </select>
 
                 <input id="edit-backlog-due-date" name="due_date" type="date" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
 
@@ -231,7 +235,6 @@
             document.getElementById('edit-backlog-form').action = button.dataset.editAction;
             document.getElementById('edit-backlog-title').value = button.dataset.title || '';
             document.getElementById('edit-backlog-description').value = button.dataset.description || '';
-            document.getElementById('edit-backlog-assignee').value = button.dataset.assigneeId || '';
             document.getElementById('edit-backlog-due-date').value = button.dataset.dueDate || '';
             document.getElementById('edit-backlog-priority').value = button.dataset.priority || 'medium';
             document.getElementById('edit-backlog-status').value = button.dataset.status || 'todo';

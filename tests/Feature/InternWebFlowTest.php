@@ -226,6 +226,15 @@ class InternWebFlowTest extends TestCase
             'type' => 'university',
         ]);
 
+        Period::create([
+            'institution_id' => $institution->id,
+            'type' => Period::TYPE_INTERNSHIP,
+            'name' => 'Periode Aktif Reassign',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'holidays' => [],
+        ]);
+
         $supervisor = User::factory()->create(['institution_id' => $institution->id]);
         $supervisor->assignRole('Supervisor');
 
@@ -268,6 +277,15 @@ class InternWebFlowTest extends TestCase
         $institution = Institution::create([
             'name' => 'Kampus Reassign Locked',
             'type' => 'university',
+        ]);
+
+        Period::create([
+            'institution_id' => $institution->id,
+            'type' => Period::TYPE_INTERNSHIP,
+            'name' => 'Periode Aktif Reassign Locked',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'holidays' => [],
         ]);
 
         $supervisor = User::factory()->create(['institution_id' => $institution->id]);

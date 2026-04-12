@@ -116,7 +116,7 @@ class InternProjectBoardController extends Controller
             : $availableProjects;
 
         $assigneeFilters = $isManager
-            ? User::query()->role('Intern')->orderBy('name')->get(['id', 'name'])
+            ? $this->activeInternsQuery($selectedSprint?->institution_id)->orderBy('name')->get(['id', 'name'])
             : collect();
 
         $taskQuery = Project::query()
@@ -285,9 +285,10 @@ class InternProjectBoardController extends Controller
             return back()->withErrors(['assignee_id' => $message]);
         }
 
-        $newAssignee = User::query()->role('Intern')->find((int) $validated['assignee_id']);
+        $newAssignee = $this->activeInternsQuery($this->resolveProjectInstitutionId($project))
+            ->find((int) $validated['assignee_id']);
         if (! $newAssignee) {
-            $message = 'Assignee baru harus user dengan role Intern.';
+            $message = 'Assignee baru harus intern dengan periode internship aktif.';
 
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 422);
@@ -580,5 +581,70 @@ class InternProjectBoardController extends Controller
 
             DB::table('comments')->insert($commentRows);
         });
+    }
+
+    private function resolveProjectInstitutionId(Project $project): ?int
+    {
+        $project->loadMissing([
+            'sprint:id,institution_id',
+            'assignee:id,name,institution_id',
+            'spec.assignedInterns:id,institution_id',
+        ]);
+
+        $institutionId = $project->sprint?->institution_id ?? $project->assignee?->institution_id;
+        if ($institutionId) {
+            return (int) $institutionId;
+        }
+
+        $institutionIds = $project->spec?->assignedInterns
+            ?->pluck('institution_id')
+            ->filter()
+            ->map(static fn (int $id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($institutionIds && $institutionIds->count() === 1) {
+            return (int) $institutionIds->first();
+        }
+
+        return null;
+    }
+
+    private function activeInternsQuery(?int $institutionId = null)
+    {
+        $activeInstitutionIds = $this->activeInternInstitutionIds();
+
+        $query = User::query()->role('Intern');
+
+        if ($activeInstitutionIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->whereIn('institution_id', $activeInstitutionIds);
+
+        if ($institutionId) {
+            $query->where('institution_id', $institutionId);
+        }
+
+        return $query;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function activeInternInstitutionIds(): array
+    {
+        $today = now()->toDateString();
+
+        return Period::query()
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->pluck('institution_id')
+            ->filter()
+            ->map(static fn (int $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 }

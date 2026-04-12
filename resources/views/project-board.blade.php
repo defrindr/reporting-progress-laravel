@@ -252,21 +252,25 @@
                                 @endif
 
                                 @if ($isManager && $project->status === 'todo')
-                                    <form method="POST" action="{{ route('projects.reassign', $project) }}"
-                                        class="mt-3 flex items-center gap-2 text-xs">
-                                        @csrf
-                                        @method('PATCH')
-                                        <select name="assignee_id" class="rounded-lg border border-slate-300 px-2 py-1.5" required>
-                                            @foreach ($assigneeFilters as $assigneeOption)
-                                                <option value="{{ $assigneeOption->id }}" @selected((int) $project->assignee_id === (int) $assigneeOption->id)>
-                                                    {{ $assigneeOption->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <button type="submit"
-                                            class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50">Ubah
-                                            Assignee</button>
-                                    </form>
+                                    @if ($assigneeFilters->isNotEmpty())
+                                        <form method="POST" action="{{ route('projects.reassign', $project) }}"
+                                            class="mt-3 flex items-center gap-2 text-xs">
+                                            @csrf
+                                            @method('PATCH')
+                                            <select name="assignee_id" class="rounded-lg border border-slate-300 px-2 py-1.5" required>
+                                                @foreach ($assigneeFilters as $assigneeOption)
+                                                    <option value="{{ $assigneeOption->id }}" @selected((int) $project->assignee_id === (int) $assigneeOption->id)>
+                                                        {{ $assigneeOption->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <button type="submit"
+                                                class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50">Ubah
+                                                Assignee</button>
+                                        </form>
+                                    @else
+                                        <p class="mt-3 text-xs font-medium text-amber-700">Belum ada intern dengan periode internship aktif untuk dipilih.</p>
+                                    @endif
                                 @endif
 
                                 <div class="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-2.5">
@@ -351,19 +355,23 @@
                                 <td class="px-3 py-2">{{ $task->creator?->name ?? '-' }}</td>
                                 <td class="px-3 py-2">
                                     @if ($task->status === 'todo')
-                                        <form method="POST" action="{{ route('projects.reassign', $task) }}" class="flex items-center gap-2">
-                                            @csrf
-                                            @method('PATCH')
-                                            <select name="assignee_id" class="rounded-lg border border-slate-300 px-2 py-1.5 text-xs" required>
-                                                @foreach ($assigneeFilters as $assigneeOption)
-                                                    <option value="{{ $assigneeOption->id }}" @selected((int) $task->assignee_id === (int) $assigneeOption->id)>
-                                                        {{ $assigneeOption->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            <button type="submit"
-                                                class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50">Simpan</button>
-                                        </form>
+                                        @if ($assigneeFilters->isNotEmpty())
+                                            <form method="POST" action="{{ route('projects.reassign', $task) }}" class="flex items-center gap-2">
+                                                @csrf
+                                                @method('PATCH')
+                                                <select name="assignee_id" class="rounded-lg border border-slate-300 px-2 py-1.5 text-xs" required>
+                                                    @foreach ($assigneeFilters as $assigneeOption)
+                                                        <option value="{{ $assigneeOption->id }}" @selected((int) $task->assignee_id === (int) $assigneeOption->id)>
+                                                            {{ $assigneeOption->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                <button type="submit"
+                                                    class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50">Simpan</button>
+                                            </form>
+                                        @else
+                                            <span class="text-xs text-amber-700">Tidak ada intern aktif</span>
+                                        @endif
                                     @else
                                         <span class="text-xs text-slate-400">Hanya todo</span>
                                     @endif

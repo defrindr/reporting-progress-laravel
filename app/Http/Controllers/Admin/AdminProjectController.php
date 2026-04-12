@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Support\SprintWindow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -65,6 +66,8 @@ class AdminProjectController extends Controller
 
     public function show(Request $request, ProjectSpec $projectSpec): View
     {
+        $activeProjectInterns = $this->projectActiveInterns($projectSpec);
+
         $scope = $request->string('scope')->toString();
         if (! in_array($scope, ['backlog', 'sprint', 'all'], true)) {
             $scope = 'backlog';
@@ -129,7 +132,7 @@ class AdminProjectController extends Controller
 
         return view('admin.projects.show', [
             'project' => $projectSpec->load('creator:id,name'),
-            'interns' => User::query()->role('Intern')->orderBy('name')->get(['id', 'name']),
+            'interns' => $activeProjectInterns,
             'periods' => $periodsQuery->get(),
             'backlogs' => $backlogs,
             'activationCandidates' => $activationCandidates,
@@ -146,10 +149,8 @@ class AdminProjectController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'assignee_id' => ['required', 'exists:users,id'],
             'due_date' => ['nullable', 'date'],
             'priority' => ['required', Rule::in(['low', 'medium', 'high', 'critical'])],
-            'status' => ['required', Rule::in(['todo', 'doing', 'done'])],
         ]);
 
         Project::create([
@@ -157,10 +158,10 @@ class AdminProjectController extends Controller
             'period_id' => null,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'assignee_id' => (int) $validated['assignee_id'],
+            'assignee_id' => null,
             'due_date' => $validated['due_date'] ?? null,
             'priority' => $validated['priority'],
-            'status' => $validated['status'],
+            'status' => 'todo',
             'created_by' => $request->user()->id,
         ]);
 
@@ -176,7 +177,6 @@ class AdminProjectController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'assignee_id' => ['required', 'exists:users,id'],
             'due_date' => ['nullable', 'date'],
             'priority' => ['required', Rule::in(['low', 'medium', 'high', 'critical'])],
             'status' => ['required', Rule::in(['todo', 'doing', 'done'])],
@@ -185,10 +185,9 @@ class AdminProjectController extends Controller
         $backlog->update([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'assignee_id' => (int) $validated['assignee_id'],
             'due_date' => $validated['due_date'] ?? null,
             'priority' => $validated['priority'],
-            'status' => $validated['status'],
+            'status' => $backlog->period_id ? $validated['status'] : 'todo',
         ]);
 
         return back()->with('status', 'Backlog berhasil diubah.');
@@ -210,6 +209,8 @@ class AdminProjectController extends Controller
         $validated = $request->validate([
             'backlog_ids' => ['required', 'array', 'min:1'],
             'backlog_ids.*' => ['integer', 'exists:projects,id'],
+            'assignees' => ['nullable', 'array'],
+            'assignees.*' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
         $selectedBacklogIds = Project::query()
@@ -223,7 +224,44 @@ class AdminProjectController extends Controller
             return back()->withErrors(['backlog_ids' => 'Pilih backlog yang valid untuk project ini.']);
         }
 
-        [$institutionId, $activationError] = $this->resolveActivationInstitutionId($projectSpec, $selectedBacklogIds);
+        $assigneeMap = collect($validated['assignees'] ?? [])
+            ->mapWithKeys(static fn ($assigneeId, $backlogId): array => [(int) $backlogId => $assigneeId ? (int) $assigneeId : null]);
+
+        $missingAssigneeBacklogIds = collect($selectedBacklogIds)
+            ->filter(static fn (int $id): bool => ! isset($assigneeMap[$id]) || ! $assigneeMap[$id])
+            ->values()
+            ->all();
+
+        if ($missingAssigneeBacklogIds !== []) {
+            return back()->withErrors([
+                'assignees' => 'Setiap backlog yang dipilih wajib punya assignee saat dimasukkan ke sprint.',
+            ]);
+        }
+
+        $eligibleInternIds = $this->projectActiveInterns($projectSpec)
+            ->pluck('id')
+            ->map(static fn (int $id): int => (int) $id)
+            ->all();
+
+        $selectedAssigneeIds = collect($selectedBacklogIds)
+            ->map(static fn (int $id): ?int => $assigneeMap[$id] ?? null)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $invalidAssigneeIds = collect($selectedAssigneeIds)
+            ->diff($eligibleInternIds)
+            ->values()
+            ->all();
+
+        if ($invalidAssigneeIds !== []) {
+            return back()->withErrors([
+                'assignees' => 'Assignee harus berasal dari intern project dengan periode internship yang sedang aktif.',
+            ]);
+        }
+
+        [$institutionId, $activationError] = $this->resolveActivationInstitutionId($projectSpec, $selectedBacklogIds, $selectedAssigneeIds);
         if ($activationError) {
             return back()->withErrors(['backlog_ids' => $activationError]);
         }
@@ -237,17 +275,25 @@ class AdminProjectController extends Controller
             return back()->withErrors(['backlog_ids' => 'Gagal menentukan sprint untuk aktivasi backlog.']);
         }
 
-        DB::transaction(function () use ($projectSpec, $targetSprint, $selectedBacklogIds): void {
+        DB::transaction(function () use ($projectSpec, $targetSprint, $selectedBacklogIds, $assigneeMap): void {
             Project::query()
                 ->where('project_spec_id', $projectSpec->id)
                 ->where('period_id', $targetSprint->id)
                 ->whereNotIn('id', $selectedBacklogIds)
-                ->update(['period_id' => null]);
+                ->update([
+                    'period_id' => null,
+                    'assignee_id' => null,
+                ]);
 
-            Project::query()
-                ->where('project_spec_id', $projectSpec->id)
-                ->whereIn('id', $selectedBacklogIds)
-                ->update(['period_id' => $targetSprint->id]);
+            foreach ($selectedBacklogIds as $backlogId) {
+                Project::query()
+                    ->where('project_spec_id', $projectSpec->id)
+                    ->where('id', $backlogId)
+                    ->update([
+                        'period_id' => $targetSprint->id,
+                        'assignee_id' => (int) $assigneeMap[$backlogId],
+                    ]);
+            }
         });
 
         $status = $createdNewSprint
@@ -298,11 +344,30 @@ class AdminProjectController extends Controller
 
     /**
      * @param  array<int, int>  $selectedBacklogIds
+     * @param  array<int, int>  $selectedAssigneeIds
      * @return array{0: ?int, 1: ?string}
      */
-    private function resolveActivationInstitutionId(ProjectSpec $projectSpec, array $selectedBacklogIds): array
+    private function resolveActivationInstitutionId(ProjectSpec $projectSpec, array $selectedBacklogIds, array $selectedAssigneeIds = []): array
     {
         $institutionIds = collect();
+
+        if ($selectedAssigneeIds !== []) {
+            $institutionIds = User::query()
+                ->whereIn('id', $selectedAssigneeIds)
+                ->whereNotNull('institution_id')
+                ->pluck('institution_id')
+                ->map(static fn (int $id): int => (int) $id)
+                ->unique()
+                ->values();
+
+            if ($institutionIds->count() > 1) {
+                return [null, 'Assignee backlog terpilih berasal dari lebih dari satu institusi. Aktifkan sprint untuk satu institusi yang sama.'];
+            }
+
+            if ($institutionIds->count() === 1) {
+                return [(int) $institutionIds->first(), null];
+            }
+        }
 
         if ($selectedBacklogIds !== []) {
             $institutionIds = Project::query()
@@ -341,6 +406,43 @@ class AdminProjectController extends Controller
         }
 
         return [null, 'Project belum memiliki institusi intern yang bisa dipakai untuk membuat sprint otomatis.'];
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private function projectActiveInterns(ProjectSpec $projectSpec): Collection
+    {
+        $activeInstitutionIds = $this->activeInternInstitutionIds();
+
+        if ($activeInstitutionIds === []) {
+            return collect();
+        }
+
+        return $projectSpec->assignedInterns()
+            ->role('Intern')
+            ->whereIn('users.institution_id', $activeInstitutionIds)
+            ->orderBy('users.name')
+            ->get(['users.id', 'users.name', 'users.institution_id']);
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function activeInternInstitutionIds(): array
+    {
+        $today = now()->toDateString();
+
+        return Period::query()
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->pluck('institution_id')
+            ->filter()
+            ->map(static fn (int $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

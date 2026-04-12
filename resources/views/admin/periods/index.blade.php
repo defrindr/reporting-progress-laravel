@@ -84,6 +84,16 @@
                 <input name="start_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 <input name="end_date" type="date" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 <input name="holidays" type="text" placeholder="2026-01-01,2026-01-02" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
+
+                <div class="space-y-2 lg:col-span-2">
+                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">List User Baru (Opsional)</label>
+                    <textarea
+                        name="new_users"
+                        rows="5"
+                        placeholder="Nama Intern|intern1@kampus.ac.id&#10;Nama Intern 2|intern2@kampus.ac.id"
+                        class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">{{ old('new_users') }}</textarea>
+                    <p class="text-xs text-slate-500">Satu baris satu user, format: Nama|email. User akan dibuat sebagai Intern dengan password default <span class="font-semibold">password123</span>.</p>
+                </div>
             </div>
 
             <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan</button>

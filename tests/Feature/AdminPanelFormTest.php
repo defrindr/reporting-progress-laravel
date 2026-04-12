@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -52,10 +53,17 @@ class AdminPanelFormTest extends TestCase
                 'start_date' => '2026-01-01',
                 'end_date' => '2026-03-31',
                 'holidays' => '2026-01-02,2026-01-03',
+                'new_users' => "Intern Batch Satu|batch1@example.com\nIntern Batch Dua|batch2@example.com",
             ])
             ->assertRedirect();
 
         $this->assertDatabaseHas('periods', ['name' => 'Periode Form']);
+        $this->assertDatabaseHas('users', ['email' => 'batch1@example.com', 'institution_id' => $institutionId]);
+        $this->assertDatabaseHas('users', ['email' => 'batch2@example.com', 'institution_id' => $institutionId]);
+
+        $periodCreatedIntern = User::query()->where('email', 'batch1@example.com')->firstOrFail();
+        $this->assertTrue(Hash::check('password123', $periodCreatedIntern->password));
+        $this->assertTrue($periodCreatedIntern->hasRole('Intern'));
 
         $this->actingAs($admin)
             ->post('/admin/users', [

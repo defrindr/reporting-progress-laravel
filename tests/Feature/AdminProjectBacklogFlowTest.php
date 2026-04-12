@@ -39,6 +39,14 @@ class AdminProjectBacklogFlowTest extends TestCase
         ]);
         $intern->assignRole('Intern');
 
+        Period::query()->create([
+            'institution_id' => $institution->id,
+            'type' => Period::TYPE_INTERNSHIP,
+            'name' => 'Internship Aktif',
+            'start_date' => now()->copy()->subDays(10)->toDateString(),
+            'end_date' => now()->copy()->addDays(20)->toDateString(),
+        ]);
+
         $period = Period::query()->create([
             'institution_id' => $institution->id,
             'type' => Period::TYPE_SPRINT,
@@ -63,10 +71,8 @@ class AdminProjectBacklogFlowTest extends TestCase
             ->post("/admin/projects/{$project->id}/backlogs", [
                 'title' => 'Task Backlog A',
                 'description' => 'Task pertama',
-                'assignee_id' => $intern->id,
                 'due_date' => '2026-01-20',
                 'priority' => 'high',
-                'status' => 'todo',
             ])
             ->assertRedirect();
 
@@ -74,19 +80,32 @@ class AdminProjectBacklogFlowTest extends TestCase
             ->post("/admin/projects/{$project->id}/backlogs", [
                 'title' => 'Task Backlog B',
                 'description' => 'Task kedua',
-                'assignee_id' => $intern->id,
                 'due_date' => '2026-01-25',
                 'priority' => 'medium',
-                'status' => 'doing',
             ])
             ->assertRedirect();
 
         $backlogA = Project::query()->where('title', 'Task Backlog A')->firstOrFail();
         $backlogB = Project::query()->where('title', 'Task Backlog B')->firstOrFail();
 
+        $this->assertDatabaseHas('projects', [
+            'id' => $backlogA->id,
+            'assignee_id' => null,
+            'status' => 'todo',
+        ]);
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $backlogB->id,
+            'assignee_id' => null,
+            'status' => 'todo',
+        ]);
+
         $this->actingAs($admin)
             ->patch("/admin/projects/{$project->id}/activate-sprint", [
                 'backlog_ids' => [$backlogA->id],
+                'assignees' => [
+                    $backlogA->id => $intern->id,
+                ],
             ])
             ->assertRedirect();
 
@@ -102,6 +121,7 @@ class AdminProjectBacklogFlowTest extends TestCase
         $this->assertDatabaseHas('projects', [
             'id' => $backlogA->id,
             'period_id' => $backlogA->period_id,
+            'assignee_id' => $intern->id,
         ]);
 
         $this->assertDatabaseHas('projects', [
@@ -112,12 +132,16 @@ class AdminProjectBacklogFlowTest extends TestCase
         $this->actingAs($admin)
             ->patch("/admin/projects/{$project->id}/activate-sprint", [
                 'backlog_ids' => [$backlogB->id],
+                'assignees' => [
+                    $backlogB->id => $intern->id,
+                ],
             ])
             ->assertRedirect();
 
         $this->assertDatabaseHas('projects', [
             'id' => $backlogA->id,
             'period_id' => null,
+            'assignee_id' => null,
         ]);
 
         $backlogB->refresh();
