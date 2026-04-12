@@ -15,12 +15,22 @@ class Project extends Model
 
     protected $fillable = [
         'project_spec_id',
+        'period_id',
         'title',
         'description',
+        'due_date',
+        'priority',
         'assignee_id',
         'created_by',
         'status',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'due_date' => 'date',
+        ];
+    }
 
     public function assignee(): BelongsTo
     {
@@ -35,6 +45,11 @@ class Project extends Model
     public function spec(): BelongsTo
     {
         return $this->belongsTo(ProjectSpec::class, 'project_spec_id');
+    }
+
+    public function sprint(): BelongsTo
+    {
+        return $this->belongsTo(Period::class, 'period_id');
     }
 
     public function comments(): MorphMany

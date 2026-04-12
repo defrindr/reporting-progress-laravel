@@ -13,13 +13,17 @@ class ProjectController extends Controller
     public function index(Request $request): JsonResponse
     {
         $projects = Project::query()
-            ->with(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name', 'comments.user:id,name'])
+            ->with(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name', 'sprint:id,name,start_date,end_date', 'comments.user:id,name'])
             ->when(
                 $request->filled('institution_id'),
                 fn (Builder $query): Builder => $query->whereHas(
                     'assignee',
                     fn (Builder $userQuery): Builder => $userQuery->where('institution_id', $request->integer('institution_id'))
                 )
+            )
+            ->when(
+                $request->filled('period_id'),
+                fn (Builder $query): Builder => $query->where('period_id', $request->integer('period_id'))
             )
             ->orderByDesc('id')
             ->get();
@@ -31,8 +35,11 @@ class ProjectController extends Controller
     {
         $validated = $request->validate([
             'project_spec_id' => ['nullable', 'exists:project_specs,id'],
+            'period_id' => ['nullable', 'exists:periods,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'due_date' => ['nullable', 'date'],
+            'priority' => ['nullable', Rule::in(['low', 'medium', 'high', 'critical'])],
             'assignee_id' => ['nullable', 'exists:users,id'],
             'status' => ['nullable', Rule::in(['todo', 'doing', 'done'])],
         ]);
@@ -41,20 +48,23 @@ class ProjectController extends Controller
 
         $project = Project::create([
             'project_spec_id' => $validated['project_spec_id'] ?? null,
+            'period_id' => $validated['period_id'] ?? null,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
+            'due_date' => $validated['due_date'] ?? null,
+            'priority' => $validated['priority'] ?? 'medium',
             'assignee_id' => $assigneeId,
             'created_by' => $request->user()->id,
             'status' => $validated['status'] ?? 'todo',
         ]);
 
-        return response()->json(['data' => $project->load(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name'])], 201);
+        return response()->json(['data' => $project->load(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name', 'sprint:id,name,start_date,end_date'])], 201);
     }
 
     public function show(Project $project): JsonResponse
     {
         return response()->json([
-            'data' => $project->load(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name', 'comments.user:id,name']),
+            'data' => $project->load(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name', 'sprint:id,name,start_date,end_date', 'comments.user:id,name']),
         ]);
     }
 
@@ -76,15 +86,18 @@ class ProjectController extends Controller
     {
         $validated = $request->validate([
             'project_spec_id' => ['sometimes', 'nullable', 'exists:project_specs,id'],
+            'period_id' => ['sometimes', 'nullable', 'exists:periods,id'],
             'title' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'due_date' => ['sometimes', 'nullable', 'date'],
+            'priority' => ['sometimes', Rule::in(['low', 'medium', 'high', 'critical'])],
             'assignee_id' => ['sometimes', 'exists:users,id'],
             'status' => ['sometimes', Rule::in(['todo', 'doing', 'done'])],
         ]);
 
         $project->update($validated);
 
-        return response()->json(['data' => $project->load(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name'])]);
+        return response()->json(['data' => $project->load(['spec:id,title', 'assignee:id,name,institution_id', 'creator:id,name', 'sprint:id,name,start_date,end_date'])]);
     }
 
     public function addComment(Request $request, Project $project): JsonResponse

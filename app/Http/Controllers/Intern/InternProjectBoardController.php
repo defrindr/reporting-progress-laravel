@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Intern;
 use App\Http\Controllers\Controller;
 use App\Models\Period;
 use App\Models\Project;
-use App\Models\ProjectSpec;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -46,19 +45,13 @@ class InternProjectBoardController extends Controller
             }) ?? $sprints->first();
         }
 
-        $assignedSpecs = $isManager
-            ? ProjectSpec::query()->with('assignedInterns:id,name')->latest()->get()
-            : $user->assignedProjectSpecs()->latest('project_specs.id')->get();
-
         $taskQuery = Project::query()
-            ->with(['spec:id,title', 'assignee:id,name', 'creator:id,name', 'comments.user:id,name'])
+            ->with(['spec:id,title,specification', 'assignee:id,name', 'creator:id,name', 'sprint:id,name,start_date,end_date', 'comments.user:id,name'])
             ->when(! $isManager, fn ($query) => $query->where('assignee_id', $user->id))
             ->orderByDesc('id');
 
         if ($selectedSprint) {
-            $taskQuery
-                ->whereDate('created_at', '>=', $selectedSprint->start_date)
-                ->whereDate('created_at', '<=', $selectedSprint->end_date);
+            $taskQuery->where('period_id', $selectedSprint->id);
         } else {
             $taskQuery->whereRaw('1 = 0');
         }
@@ -75,50 +68,11 @@ class InternProjectBoardController extends Controller
 
         return view('project-board', [
             'tasks' => $tasks,
-            'assignedSpecs' => $assignedSpecs,
             'activityByProject' => $activityByProject,
             'isManager' => $isManager,
             'sprints' => $sprints,
             'selectedSprint' => $selectedSprint,
         ]);
-    }
-
-    public function storeTask(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'project_spec_id' => ['required', 'exists:project_specs,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-        ]);
-
-        $user = $request->user();
-
-        if (! $user instanceof User) {
-            abort(403);
-        }
-
-        if ($user->canManageAllProjects()) {
-            abort(403);
-        }
-
-        $isAssigned = $user->assignedProjectSpecs()
-            ->where('project_specs.id', (int) $validated['project_spec_id'])
-            ->exists();
-
-        if (! $isAssigned) {
-            abort(403);
-        }
-
-        Project::create([
-            'project_spec_id' => (int) $validated['project_spec_id'],
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'assignee_id' => $user->id,
-            'created_by' => $user->id,
-            'status' => 'todo',
-        ]);
-
-        return back()->with('status', 'Task berhasil dibuat dari spec yang di-assign.');
     }
 
     public function setStatus(Request $request, Project $project): RedirectResponse|JsonResponse

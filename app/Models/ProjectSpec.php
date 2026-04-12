@@ -32,4 +32,9 @@ class ProjectSpec extends Model
     {
         return $this->hasMany(Project::class, 'project_spec_id');
     }
+
+    public function backlogs(): HasMany
+    {
+        return $this->hasMany(Project::class, 'project_spec_id');
+    }
 }

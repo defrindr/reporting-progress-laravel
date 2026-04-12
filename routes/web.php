@@ -41,7 +41,6 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/logbook', [InternLogbookController::class, 'store'])->name('logbook.store');
 
     Route::get('/projects/board', [InternProjectBoardController::class, 'index'])->name('projects.board');
-    Route::post('/projects/tasks', [InternProjectBoardController::class, 'storeTask'])->name('projects.tasks.store');
     Route::patch('/projects/{project}/status', [InternProjectBoardController::class, 'setStatus'])->name('projects.status');
     Route::patch('/projects/{project}/advance', [InternProjectBoardController::class, 'advance'])->name('projects.advance');
     Route::post('/projects/{project}/comment', [InternProjectBoardController::class, 'addComment'])->name('projects.comment');
@@ -73,6 +72,11 @@ Route::middleware('auth')->group(function (): void {
 
         Route::get('/projects', [AdminProjectController::class, 'index'])->name('projects.index');
         Route::post('/projects', [AdminProjectController::class, 'store'])->name('projects.store');
+        Route::get('/projects/{projectSpec}', [AdminProjectController::class, 'show'])->name('projects.show');
+        Route::post('/projects/{projectSpec}/backlogs', [AdminProjectController::class, 'storeBacklog'])->name('projects.backlogs.store');
+        Route::put('/projects/{projectSpec}/backlogs/{backlog}', [AdminProjectController::class, 'updateBacklog'])->name('projects.backlogs.update');
+        Route::delete('/projects/{projectSpec}/backlogs/{backlog}', [AdminProjectController::class, 'destroyBacklog'])->name('projects.backlogs.destroy');
+        Route::patch('/projects/{projectSpec}/activate-sprint', [AdminProjectController::class, 'activateSprint'])->name('projects.activate-sprint');
         Route::put('/projects/{projectSpec}', [AdminProjectController::class, 'update'])->name('projects.update');
         Route::delete('/projects/{projectSpec}', [AdminProjectController::class, 'destroy'])->name('projects.destroy');
     });

@@ -38,26 +38,6 @@
             @endif
         </article>
 
-        @if (! $isManager)
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 class="text-lg font-semibold">Buat Task dari Project Spec</h2>
-                <p class="mt-1 text-sm text-slate-500">Pilih salah satu project spec yang di-assign ke akun intern kamu.</p>
-
-                <form method="POST" action="{{ route('projects.tasks.store') }}" class="mt-4 grid gap-3 lg:grid-cols-4">
-                    @csrf
-                    <select name="project_spec_id" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
-                        <option value="">Pilih Project Spec</option>
-                        @foreach ($assignedSpecs as $spec)
-                            <option value="{{ $spec->id }}">{{ $spec->title }}</option>
-                        @endforeach
-                    </select>
-                    <input name="title" type="text" required placeholder="Judul task" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
-                    <textarea name="description" rows="3" placeholder="Deskripsi task" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-4"></textarea>
-                    <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 lg:col-span-4">Create Task</button>
-                </form>
-            </article>
-        @endif
-
         <div class="grid gap-4 lg:grid-cols-3" data-kanban-board>
             @foreach ($groups as $status => $label)
                 <article class="kanban-drop-zone rounded-2xl border border-slate-200 bg-slate-50/70 p-4" data-drop-status="{{ $status }}">
@@ -76,7 +56,8 @@
                                 data-current-status="{{ $project->status }}">
                                 <h3 class="text-sm font-semibold text-slate-900">{{ $project->title }}</h3>
                                 <p class="mt-1 text-xs text-slate-500">Intern: {{ $project->assignee?->name ?? '-' }}</p>
-                                <p class="mt-1 text-xs text-slate-500">Spec: {{ $project->spec?->title ?? '-' }}</p>
+                                <p class="mt-1 text-xs text-slate-500">Project: {{ $project->spec?->title ?? '-' }}</p>
+                                <p class="mt-1 text-xs text-slate-500">Priority: {{ $project->priority }} | Due: {{ optional($project->due_date)->toDateString() ?? '-' }}</p>
                                 <p class="mt-2 text-sm text-slate-700">{{ $project->description ?: 'Tanpa deskripsi' }}</p>
 
                                 @if ($canDrag)
@@ -146,9 +127,11 @@
                     <thead class="bg-slate-50 text-left text-slate-600">
                         <tr>
                             <th class="px-3 py-2">Tanggal</th>
+                            <th class="px-3 py-2">Project</th>
                             <th class="px-3 py-2">Intern</th>
                             <th class="px-3 py-2">Task</th>
-                            <th class="px-3 py-2">Project Spec</th>
+                            <th class="px-3 py-2">Due</th>
+                            <th class="px-3 py-2">Priority</th>
                             <th class="px-3 py-2">Status</th>
                             <th class="px-3 py-2">Creator</th>
                         </tr>
@@ -157,15 +140,17 @@
                         @forelse ($tasks as $task)
                             <tr>
                                 <td class="px-3 py-2">{{ optional($task->created_at)->toDateString() }}</td>
+                                <td class="px-3 py-2">{{ $task->spec?->title ?? '-' }}</td>
                                 <td class="px-3 py-2">{{ $task->assignee?->name ?? '-' }}</td>
                                 <td class="px-3 py-2">{{ $task->title }}</td>
-                                <td class="px-3 py-2">{{ $task->spec?->title ?? '-' }}</td>
+                                <td class="px-3 py-2">{{ optional($task->due_date)->toDateString() ?? '-' }}</td>
+                                <td class="px-3 py-2">{{ $task->priority }}</td>
                                 <td class="px-3 py-2">{{ $task->status }}</td>
                                 <td class="px-3 py-2">{{ $task->creator?->name ?? '-' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-3 py-6 text-center text-sm text-slate-500">Tidak ada task pada filter ini.</td>
+                                <td colspan="8" class="px-3 py-6 text-center text-sm text-slate-500">Tidak ada task pada sprint ini.</td>
                             </tr>
                         @endforelse
                     </tbody>
