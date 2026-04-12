@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Period;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,14 +17,25 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
-            'institution_id' => ['nullable', 'exists:institutions,id'],
+            'institution_id' => ['required', 'exists:institutions,id'],
         ]);
+
+        $hasInternshipPeriod = Period::query()
+            ->where('institution_id', (int) $validated['institution_id'])
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->exists();
+
+        if (! $hasInternshipPeriod) {
+            return response()->json([
+                'message' => 'Sebelum membuat user intern, buat dulu period magang (internship) untuk institusi ini.',
+            ], 422);
+        }
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'institution_id' => $validated['institution_id'] ?? null,
+            'institution_id' => (int) $validated['institution_id'],
         ]);
 
         Role::findOrCreate('Intern', 'web');

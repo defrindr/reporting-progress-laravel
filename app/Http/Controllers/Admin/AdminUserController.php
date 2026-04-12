@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Institution;
+use App\Models\Period;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,6 +35,10 @@ class AdminUserController extends Controller
             'roles.*' => ['string', 'exists:roles,name'],
         ]);
 
+        if ($error = $this->internOnboardingError($validated['roles'], isset($validated['institution_id']) ? (int) $validated['institution_id'] : null)) {
+            return back()->withErrors(['roles' => $error])->withInput();
+        }
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -56,6 +61,10 @@ class AdminUserController extends Controller
             'roles' => ['required', 'array', 'min:1'],
             'roles.*' => ['string', 'exists:roles,name'],
         ]);
+
+        if ($error = $this->internOnboardingError($validated['roles'], isset($validated['institution_id']) ? (int) $validated['institution_id'] : null)) {
+            return back()->withErrors(['roles' => $error])->withInput();
+        }
 
         $payload = [
             'name' => $validated['name'],
@@ -82,5 +91,30 @@ class AdminUserController extends Controller
         $user->delete();
 
         return back()->with('status', 'User berhasil dihapus.');
+    }
+
+    /**
+     * @param  array<int, string>  $roles
+     */
+    private function internOnboardingError(array $roles, ?int $institutionId): ?string
+    {
+        if (! in_array('Intern', $roles, true)) {
+            return null;
+        }
+
+        if (! $institutionId) {
+            return 'User intern wajib memilih institusi terlebih dahulu.';
+        }
+
+        $hasInternshipPeriod = Period::query()
+            ->where('institution_id', $institutionId)
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->exists();
+
+        if (! $hasInternshipPeriod) {
+            return 'Sebelum membuat user intern, buat dulu period magang (internship) untuk institusi ini.';
+        }
+
+        return null;
     }
 }

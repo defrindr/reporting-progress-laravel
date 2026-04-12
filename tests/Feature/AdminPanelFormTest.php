@@ -45,6 +45,19 @@ class AdminPanelFormTest extends TestCase
         $institutionId = (int) \App\Models\Institution::query()->where('name', 'Universitas Form')->value('id');
 
         $this->actingAs($admin)
+            ->post('/admin/periods', [
+                'institution_id' => $institutionId,
+                'type' => 'internship',
+                'name' => 'Periode Form',
+                'start_date' => '2026-01-01',
+                'end_date' => '2026-03-31',
+                'holidays' => '2026-01-02,2026-01-03',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('periods', ['name' => 'Periode Form']);
+
+        $this->actingAs($admin)
             ->post('/admin/users', [
                 'name' => 'Intern Web',
                 'email' => 'internweb@example.com',
@@ -56,18 +69,6 @@ class AdminPanelFormTest extends TestCase
 
         $intern = User::where('email', 'internweb@example.com')->firstOrFail();
         $this->assertTrue($intern->hasRole('Intern'));
-
-        $this->actingAs($admin)
-            ->post('/admin/periods', [
-                'institution_id' => $institutionId,
-                'name' => 'Periode Form',
-                'start_date' => '2026-01-01',
-                'end_date' => '2026-03-31',
-                'holidays' => '2026-01-02,2026-01-03',
-            ])
-            ->assertRedirect();
-
-        $this->assertDatabaseHas('periods', ['name' => 'Periode Form']);
 
         $this->actingAs($admin)
             ->post('/admin/projects', [

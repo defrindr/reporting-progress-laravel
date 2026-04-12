@@ -5,7 +5,7 @@
         <header class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-semibold tracking-tight">CRUD Periods</h1>
-                <p class="text-sm text-slate-500">Pisahkan period magang dan period sprint mingguan. Format holidays: YYYY-MM-DD dipisah koma.</p>
+                <p class="text-sm text-slate-500">Pisahkan period magang dan period sprint mingguan per institusi (universitas/sekolah). Format holidays: YYYY-MM-DD dipisah koma.</p>
             </div>
 
             <button type="button" onclick="document.getElementById('create-period-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Period</button>
@@ -76,9 +76,9 @@
 
             <div class="grid gap-3 lg:grid-cols-2">
                 <select name="institution_id" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    <option value="">Pilih University</option>
-                    @foreach ($universities as $university)
-                        <option value="{{ $university->id }}">{{ $university->name }}</option>
+                    <option value="">Pilih Institusi</option>
+                    @foreach ($institutions as $institution)
+                        <option value="{{ $institution->id }}">{{ $institution->name }} ({{ $institution->type }})</option>
                     @endforeach
                 </select>
 
@@ -109,8 +109,8 @@
 
             <div class="grid gap-3 lg:grid-cols-2">
                 <select id="edit-period-institution" name="institution_id" required class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
-                    @foreach ($universities as $university)
-                        <option value="{{ $university->id }}">{{ $university->name }}</option>
+                    @foreach ($institutions as $institution)
+                        <option value="{{ $institution->id }}">{{ $institution->name }} ({{ $institution->type }})</option>
                     @endforeach
                 </select>
 

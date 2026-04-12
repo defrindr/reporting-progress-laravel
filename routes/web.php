@@ -39,6 +39,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/logbook', [InternLogbookController::class, 'index'])->name('logbook.form');
     Route::post('/logbook', [InternLogbookController::class, 'store'])->name('logbook.store');
+    Route::get('/logbook/task-resume', [InternLogbookController::class, 'taskResume'])->name('logbook.task-resume');
 
     Route::get('/projects/board', [InternProjectBoardController::class, 'index'])->name('projects.board');
     Route::post('/projects/tasks', [InternProjectBoardController::class, 'storeTask'])->name('projects.tasks.store');

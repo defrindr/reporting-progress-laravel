@@ -8,6 +8,9 @@
     ];
 
     $taskItems = $tasks->getCollection();
+    $isInternReadOnly = (bool) ($isInternReadOnly ?? false);
+    $isWeekendRestriction = (bool) ($isWeekendRestriction ?? false);
+    $nextWeekStartDate = $nextWeekStartDate ?? null;
 @endphp
 
 @section('content')
@@ -17,6 +20,20 @@
             <p class="mt-1 text-sm text-slate-500">Board kanban ditampilkan per sprint dan mendukung drag-and-drop status
                 task.</p>
         </header>
+
+        @if (!$isManager && $isInternReadOnly)
+            <article class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                <p class="font-semibold">Mode Read-Only</p>
+                <p class="mt-1">{{ $readOnlyReason ?? 'Tidak ada periode aktif untuk tanggal ini.' }}</p>
+            </article>
+        @endif
+
+        @if (!$isManager && !$isInternReadOnly && $isWeekendRestriction)
+            <article class="rounded-xl border border-sky-300 bg-sky-50 p-4 text-sm text-sky-900">
+                <p class="font-semibold">Mode Weekend</p>
+                <p class="mt-1">Sabtu/Minggu tidak bisa ubah status kanban. Kamu tetap bisa tambah backlog untuk minggu depan (due date mulai {{ $nextWeekStartDate ?? '-' }}).</p>
+            </article>
+        @endif
 
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <form method="GET" action="{{ route('projects.board') }}" class="grid gap-3 lg:grid-cols-[1fr_auto_auto]">
@@ -73,6 +90,11 @@
                 <div class="mt-4 border-t border-slate-100 pt-4">
                     <p class="text-sm text-slate-500">Task harus memilih project dan due date. Sprint akan pakai sprint
                         aktif atau otomatis dari due date.</p>
+                    @if ($isInternReadOnly)
+                        <p class="mt-2 text-xs font-medium text-amber-700">Form dinonaktifkan karena akun intern berada di mode read-only.</p>
+                    @elseif ($isWeekendRestriction)
+                        <p class="mt-2 text-xs font-medium text-sky-700">Weekend: hanya backlog untuk minggu depan yang diperbolehkan.</p>
+                    @endif
 
                     <form method="POST" action="{{ route('projects.tasks.store') }}"
                         class="mt-4 grid gap-3 lg:grid-cols-2">
@@ -80,7 +102,8 @@
                         <input type="hidden" name="sprint_id" value="{{ $selectedSprint?->id }}">
 
                         <select name="project_spec_id" required
-                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                            @disabled($isInternReadOnly)
+                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100">
                             <option value="">Pilih Project</option>
                             @foreach ($availableProjects as $projectOption)
                                 <option value="{{ $projectOption->id }}">{{ $projectOption->title }}</option>
@@ -88,15 +111,20 @@
                         </select>
 
                         <input name="due_date" type="date" required
-                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                            min="{{ $isWeekendRestriction ? $nextWeekStartDate : '' }}"
+                            @disabled($isInternReadOnly)
+                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100">
 
                         <input name="title" type="text" required placeholder="Nama task"
-                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2">
+                            @disabled($isInternReadOnly)
+                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2 disabled:cursor-not-allowed disabled:bg-slate-100">
 
                         <textarea name="description" rows="3" placeholder="Detail task tambahan (opsional)"
-                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2"></textarea>
+                            @disabled($isInternReadOnly)
+                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2 disabled:cursor-not-allowed disabled:bg-slate-100"></textarea>
 
-                        <select name="priority" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                        <select name="priority" @disabled($isInternReadOnly)
+                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100">
                             <option value="low">low</option>
                             <option value="medium" selected>medium</option>
                             <option value="high">high</option>
@@ -104,6 +132,7 @@
                         </select>
 
                         <button type="submit"
+                            @disabled($isInternReadOnly)
                             class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan
                             Task</button>
                     </form>
@@ -123,7 +152,7 @@
 
                     <div class="space-y-3">
                         @forelse ($taskItems->where('status', $status) as $project)
-                            @php($canDrag = !$isManager && auth()->id() === $project->assignee_id)
+                            @php($canDrag = !$isManager && !$isInternReadOnly && !$isWeekendRestriction && auth()->id() === $project->assignee_id)
                             <div class="kanban-card rounded-xl border border-slate-200 bg-white p-3 shadow-sm {{ $canDrag ? 'cursor-grab' : '' }}"
                                 draggable="{{ $canDrag ? 'true' : 'false' }}" data-project-id="{{ $project->id }}"
                                 data-current-status="{{ $project->status }}">
@@ -139,7 +168,7 @@
                                         ini ke kolom lain untuk ubah status</p>
                                 @endif
 
-                                @if (!$isManager && auth()->id() === $project->assignee_id)
+                                @if (!$isManager && auth()->id() === $project->assignee_id && !$isInternReadOnly && !$isWeekendRestriction)
                                     <form method="POST" action="{{ route('projects.status', $project) }}"
                                         class="mt-3 flex items-center gap-2 text-xs">
                                         @csrf
@@ -153,6 +182,10 @@
                                             class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50">Set
                                             Status</button>
                                     </form>
+                                @elseif (!$isManager && auth()->id() === $project->assignee_id && $isWeekendRestriction)
+                                    <p class="mt-3 text-xs font-medium text-sky-700">Status dikunci saat weekend. Tambah backlog untuk minggu depan.</p>
+                                @elseif (!$isManager && auth()->id() === $project->assignee_id && $isInternReadOnly)
+                                    <p class="mt-3 text-xs font-medium text-amber-700">Status dikunci karena akun intern read-only.</p>
                                 @endif
 
                                 <div class="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-2.5">

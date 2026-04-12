@@ -17,7 +17,8 @@ class PeriodController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'institution_id' => ['required', Rule::exists('institutions', 'id')->where('type', 'university')],
+            'institution_id' => ['required', Rule::exists('institutions', 'id')],
+            'type' => ['nullable', Rule::in([Period::TYPE_INTERNSHIP, Period::TYPE_SPRINT])],
             'name' => ['required', 'string', 'max:255'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
@@ -25,13 +26,16 @@ class PeriodController extends Controller
             'holidays.*' => ['date'],
         ]);
 
+        $validated['type'] = $validated['type'] ?? Period::TYPE_INTERNSHIP;
+
         return response()->json(['data' => Period::create($validated)], 201);
     }
 
     public function update(Request $request, Period $period): JsonResponse
     {
         $validated = $request->validate([
-            'institution_id' => ['sometimes', Rule::exists('institutions', 'id')->where('type', 'university')],
+            'institution_id' => ['sometimes', Rule::exists('institutions', 'id')],
+            'type' => ['sometimes', Rule::in([Period::TYPE_INTERNSHIP, Period::TYPE_SPRINT])],
             'name' => ['sometimes', 'string', 'max:255'],
             'start_date' => ['sometimes', 'date'],
             'end_date' => ['sometimes', 'date', 'after_or_equal:start_date'],

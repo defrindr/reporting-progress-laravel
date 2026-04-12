@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Period;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,6 +29,13 @@ class UserController extends Controller
             'roles.*' => ['string', 'exists:roles,name'],
         ]);
 
+        $targetRoles = $validated['roles'] ?? ['Intern'];
+        $institutionId = isset($validated['institution_id']) ? (int) $validated['institution_id'] : null;
+
+        if ($error = $this->internOnboardingError($targetRoles, $institutionId)) {
+            return response()->json(['message' => $error], 422);
+        }
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -39,7 +47,7 @@ class UserController extends Controller
             Role::findOrCreate('Intern', 'web');
         }
 
-        $user->syncRoles($validated['roles'] ?? ['Intern']);
+        $user->syncRoles($targetRoles);
 
         return response()->json(['data' => $user->load('roles')], 201);
     }
@@ -54,6 +62,15 @@ class UserController extends Controller
             'roles' => ['nullable', 'array'],
             'roles.*' => ['string', 'exists:roles,name'],
         ]);
+
+        $targetRoles = $validated['roles'] ?? $user->roles()->pluck('name')->values()->all();
+        $institutionId = array_key_exists('institution_id', $validated)
+            ? (isset($validated['institution_id']) ? (int) $validated['institution_id'] : null)
+            : (isset($user->institution_id) ? (int) $user->institution_id : null);
+
+        if ($error = $this->internOnboardingError($targetRoles, $institutionId)) {
+            return response()->json(['message' => $error], 422);
+        }
 
         if (array_key_exists('password', $validated)) {
             $validated['password'] = Hash::make($validated['password']);
@@ -73,5 +90,30 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(status: 204);
+    }
+
+    /**
+     * @param  array<int, string>  $roles
+     */
+    private function internOnboardingError(array $roles, ?int $institutionId): ?string
+    {
+        if (! in_array('Intern', $roles, true)) {
+            return null;
+        }
+
+        if (! $institutionId) {
+            return 'User intern wajib memilih institusi terlebih dahulu.';
+        }
+
+        $hasInternshipPeriod = Period::query()
+            ->where('institution_id', $institutionId)
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->exists();
+
+        if (! $hasInternshipPeriod) {
+            return 'Sebelum membuat user intern, buat dulu period magang (internship) untuk institusi ini.';
+        }
+
+        return null;
     }
 }

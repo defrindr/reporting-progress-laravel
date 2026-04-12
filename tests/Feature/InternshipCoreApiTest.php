@@ -30,6 +30,15 @@ class InternshipCoreApiTest extends TestCase
             'type' => 'vocational',
         ]);
 
+        Period::create([
+            'institution_id' => $institution->id,
+            'type' => Period::TYPE_INTERNSHIP,
+            'name' => 'Periode Magang Politeknik A',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'holidays' => [],
+        ]);
+
         $response = $this->postJson('/api/register', [
             'name' => 'User Baru',
             'email' => 'baru@example.com',
@@ -80,15 +89,16 @@ class InternshipCoreApiTest extends TestCase
 
         Period::create([
             'institution_id' => $institution->id,
+            'type' => Period::TYPE_INTERNSHIP,
             'name' => 'Magang Ganjil',
             'start_date' => '2026-01-01',
-            'end_date' => '2026-03-31',
-            'holidays' => ['2026-02-01'],
+            'end_date' => '2026-12-31',
+            'holidays' => ['2026-02-02'],
         ]);
 
         $this->actingAs($intern)
             ->post('/api/logbooks', [
-                'report_date' => '2026-02-01',
+                'report_date' => '2026-02-02',
                 'done_tasks' => 'Sudah dikerjakan',
                 'next_tasks' => 'Akan dikerjakan',
                 'appendix_link' => 'https://drive.google.com/file/d/example/view',
@@ -106,6 +116,7 @@ class InternshipCoreApiTest extends TestCase
 
         $period = Period::create([
             'institution_id' => $institution->id,
+            'type' => Period::TYPE_INTERNSHIP,
             'name' => 'Batch 1',
             'start_date' => '2026-01-01',
             'end_date' => '2026-12-31',

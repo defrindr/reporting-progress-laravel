@@ -16,14 +16,14 @@ class AdminPeriodController extends Controller
     {
         return view('admin.periods.index', [
             'periods' => Period::query()->with('institution:id,name,type')->orderByDesc('start_date')->paginate(20)->withQueryString(),
-            'universities' => Institution::query()->where('type', 'university')->orderBy('name')->get(['id', 'name']),
+            'institutions' => Institution::query()->orderBy('name')->get(['id', 'name', 'type']),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'institution_id' => ['required', Rule::exists('institutions', 'id')->where('type', 'university')],
+            'institution_id' => ['required', Rule::exists('institutions', 'id')],
             'type' => ['nullable', Rule::in([Period::TYPE_INTERNSHIP, Period::TYPE_SPRINT])],
             'name' => ['required', 'string', 'max:255'],
             'start_date' => ['required', 'date'],
@@ -46,7 +46,7 @@ class AdminPeriodController extends Controller
     public function update(Request $request, Period $period): RedirectResponse
     {
         $validated = $request->validate([
-            'institution_id' => ['required', Rule::exists('institutions', 'id')->where('type', 'university')],
+            'institution_id' => ['required', Rule::exists('institutions', 'id')],
             'type' => ['nullable', Rule::in([Period::TYPE_INTERNSHIP, Period::TYPE_SPRINT])],
             'name' => ['required', 'string', 'max:255'],
             'start_date' => ['required', 'date'],

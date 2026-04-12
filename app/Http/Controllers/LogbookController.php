@@ -6,8 +6,10 @@ use App\Http\Requests\LogbookRequest;
 use App\Http\Resources\LogbookResource;
 use App\Models\Logbook;
 use App\Models\Period;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class LogbookController extends Controller
 {
@@ -31,6 +33,19 @@ class LogbookController extends Controller
         $data = $request->validated();
         $reportDate = $data['report_date'];
         $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $accessState = $this->internAccessState($user);
+        if ($accessState['is_read_only']) {
+            return response()->json(['message' => $accessState['reason']], 422);
+        }
+
+        if (Carbon::parse((string) $reportDate)->isWeekend()) {
+            return response()->json(['message' => 'Tidak bisa buat report untuk hari Sabtu/Minggu.'], 422);
+        }
 
         if (! $user->institution_id) {
             return response()->json(['message' => 'User must be linked to an institution'], 422);
@@ -77,6 +92,19 @@ class LogbookController extends Controller
         $reportDate = $data['report_date'];
         $user = $request->user();
 
+        if (! $user instanceof User) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $accessState = $this->internAccessState($user);
+        if ($accessState['is_read_only']) {
+            return response()->json(['message' => $accessState['reason']], 422);
+        }
+
+        if (Carbon::parse((string) $reportDate)->isWeekend()) {
+            return response()->json(['message' => 'Tidak bisa buat report untuk hari Sabtu/Minggu.'], 422);
+        }
+
         if (! $user->institution_id) {
             return response()->json(['message' => 'User must be linked to an institution'], 422);
         }
@@ -112,5 +140,52 @@ class LogbookController extends Controller
         $logbook->delete();
 
         return response()->json(status: 204);
+    }
+
+    /**
+     * @return array{is_read_only: bool, reason: string}
+     */
+    private function internAccessState(User $user): array
+    {
+        if (! $user->institution_id) {
+            return [
+                'is_read_only' => true,
+                'reason' => 'Akun intern harus terhubung ke institusi dan period magang aktif.',
+            ];
+        }
+
+        $today = now()->toDateString();
+
+        $activeInternship = Period::query()
+            ->where('institution_id', $user->institution_id)
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->exists();
+
+        if ($activeInternship) {
+            return [
+                'is_read_only' => false,
+                'reason' => '',
+            ];
+        }
+
+        $latestInternship = Period::query()
+            ->where('institution_id', $user->institution_id)
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->orderByDesc('end_date')
+            ->first();
+
+        if ($latestInternship && Carbon::parse((string) $latestInternship->end_date)->lt(now()->startOfDay())) {
+            return [
+                'is_read_only' => true,
+                'reason' => 'Periode magang sudah selesai. Semua fitur kini read-only.',
+            ];
+        }
+
+        return [
+            'is_read_only' => true,
+            'reason' => 'Tidak ada periode aktif untuk tanggal ini.',
+        ];
     }
 }

@@ -28,6 +28,10 @@ class InternProjectBoardController extends Controller
         }
 
         $isManager = $user->canManageAllProjects();
+        $accessState = $isManager ? ['is_read_only' => false, 'reason' => null] : $this->internAccessState($user);
+        $isWeekendRestriction = ! $isManager && now()->isWeekend();
+        $nextWeekStartDate = now()->startOfWeek(Carbon::MONDAY)->addWeek()->toDateString();
+
         $sprints = Period::query()
             ->where('type', Period::TYPE_SPRINT)
             ->with('institution:id,name')
@@ -48,7 +52,7 @@ class InternProjectBoardController extends Controller
             }) ?? $sprints->first();
         }
 
-        if ($selectedSprint) {
+        if ($selectedSprint && ! $accessState['is_read_only']) {
             $this->carryOverUnfinishedTasks($selectedSprint, $user, $isManager);
         }
 
@@ -104,6 +108,10 @@ class InternProjectBoardController extends Controller
             'tasks' => $tasks,
             'activityByProject' => $activityByProject,
             'isManager' => $isManager,
+            'isInternReadOnly' => (bool) $accessState['is_read_only'],
+            'readOnlyReason' => $accessState['reason'],
+            'isWeekendRestriction' => $isWeekendRestriction,
+            'nextWeekStartDate' => $nextWeekStartDate,
             'sprints' => $sprints,
             'selectedSprint' => $selectedSprint,
             'previousSprintId' => $previousSprintId,
@@ -133,6 +141,11 @@ class InternProjectBoardController extends Controller
             abort(403);
         }
 
+        $accessState = $this->internAccessState($user);
+        if ($accessState['is_read_only']) {
+            return back()->withErrors(['project' => $accessState['reason']])->withInput();
+        }
+
         $isAssigned = $user->assignedProjectSpecs()
             ->where('project_specs.id', (int) $validated['project_spec_id'])
             ->exists();
@@ -141,9 +154,20 @@ class InternProjectBoardController extends Controller
             return back()->withErrors(['project_spec_id' => 'Project tidak ter-assign untuk akun ini.'])->withInput();
         }
 
+        $isWeekend = now()->isWeekend();
+        $nextWeekStartDate = now()->startOfWeek(Carbon::MONDAY)->addWeek()->toDateString();
+
+        if ($isWeekend && (string) $validated['due_date'] < $nextWeekStartDate) {
+            return back()->withErrors([
+                'due_date' => 'Saat Sabtu/Minggu hanya boleh tambah backlog untuk minggu depan (due date mulai '.$nextWeekStartDate.').',
+            ])->withInput();
+        }
+
         $targetSprint = null;
 
-        if (! empty($validated['sprint_id'])) {
+        if ($isWeekend) {
+            $targetSprint = $this->resolveSprintByDate($user, (string) $validated['due_date']);
+        } elseif (! empty($validated['sprint_id'])) {
             $targetSprint = Period::query()
                 ->where('type', Period::TYPE_SPRINT)
                 ->where('institution_id', $user->institution_id)
@@ -196,6 +220,26 @@ class InternProjectBoardController extends Controller
             abort(403);
         }
 
+        if (! $user->canManageAllProjects()) {
+            $accessState = $this->internAccessState($user);
+            if ($accessState['is_read_only']) {
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => $accessState['reason']], 403);
+                }
+
+                return back()->withErrors(['project' => $accessState['reason']]);
+            }
+
+            if (now()->isWeekend()) {
+                $message = 'Hari Sabtu/Minggu tidak bisa ubah status kanban. Gunakan waktu ini untuk menambah backlog minggu depan.';
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => $message], 403);
+                }
+
+                return back()->withErrors(['project' => $message]);
+            }
+        }
+
         $project->update(['status' => $validated['status']]);
 
         if ($request->expectsJson()) {
@@ -225,6 +269,19 @@ class InternProjectBoardController extends Controller
 
         if ($project->assignee_id !== $user->id) {
             abort(403);
+        }
+
+        if (! $user->canManageAllProjects()) {
+            $accessState = $this->internAccessState($user);
+            if ($accessState['is_read_only']) {
+                return back()->withErrors(['project' => $accessState['reason']]);
+            }
+
+            if (now()->isWeekend()) {
+                return back()->withErrors([
+                    'project' => 'Hari Sabtu/Minggu tidak bisa ubah status kanban. Gunakan waktu ini untuk menambah backlog minggu depan.',
+                ]);
+            }
         }
 
         $nextStatus = [
@@ -260,12 +317,66 @@ class InternProjectBoardController extends Controller
             abort(403);
         }
 
+        if (! $user->canManageAllProjects()) {
+            $accessState = $this->internAccessState($user);
+            if ($accessState['is_read_only']) {
+                return back()->withErrors(['project' => $accessState['reason']]);
+            }
+        }
+
         $project->comments()->create([
             'body' => $validated['body'],
             'user_id' => $user->id,
         ]);
 
         return back()->with('status', 'Komentar berhasil ditambahkan.');
+    }
+
+    /**
+     * @return array{is_read_only: bool, reason: ?string}
+     */
+    private function internAccessState(User $user): array
+    {
+        if (! $user->institution_id) {
+            return [
+                'is_read_only' => true,
+                'reason' => 'Akun intern harus terhubung ke institusi dan period magang aktif.',
+            ];
+        }
+
+        $today = now()->toDateString();
+
+        $activeInternship = Period::query()
+            ->where('institution_id', $user->institution_id)
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->exists();
+
+        if ($activeInternship) {
+            return [
+                'is_read_only' => false,
+                'reason' => null,
+            ];
+        }
+
+        $latestInternship = Period::query()
+            ->where('institution_id', $user->institution_id)
+            ->where('type', Period::TYPE_INTERNSHIP)
+            ->orderByDesc('end_date')
+            ->first();
+
+        if ($latestInternship && Carbon::parse((string) $latestInternship->end_date)->lt(now()->startOfDay())) {
+            return [
+                'is_read_only' => true,
+                'reason' => 'Periode magang sudah selesai. Semua fitur kini read-only.',
+            ];
+        }
+
+        return [
+            'is_read_only' => true,
+            'reason' => 'Tidak ada periode aktif untuk tanggal ini.',
+        ];
     }
 
     private function resolveSprintByDate(User $user, string $date): ?Period
