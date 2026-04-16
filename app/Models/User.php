@@ -92,12 +92,12 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->roles()->where('name', 'Admin')->exists();
+        return $this->hasRole('Admin');
     }
 
     public function canManageAllProjects(): bool
     {
-        return $this->roles()->whereIn('name', ['Admin', 'Supervisor'])->exists();
+        return $this->hasRole(['Admin', 'Supervisor']);
     }
 
     public function activeInternshipPeriod(?Carbon $date = null): ?Period

@@ -87,8 +87,7 @@ class Project extends Model
             $activity->description = "update status from {$old} to {$new} by {$user}";
         }
         if ($eventName === 'created') {
-            $userId = Auth::id();
-            $user = User::where('id', $userId)->first();
+            $user = Auth::user();
             $userName = $user?->name ?? 'System';
             if ($user?->isAdmin()) {
                 return;
