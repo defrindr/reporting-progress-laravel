@@ -12,7 +12,7 @@
  *    Events: Push
  * 3. Ensure this file is in public/ directory
  */
-define('DEPLOY_SECRET', $_ENV['DEPLOY_SECRET'] ?? getenv('DEPLOY_SECRET') ?: 'CHANGE_ME_IN_DEPLOY_FILE');
+define('DEPLOY_SECRET', '7df6128a44b99ad343817491fdfd86f0c50a9ec629675e810d0efc765241cf6b');
 define('LOG_FILE', __DIR__.'/deploy.log');
 define('PROJECT_DIR', dirname(__DIR__));
 define('BOOTSTRAP_DIR', PROJECT_DIR.'/bootstrap');
