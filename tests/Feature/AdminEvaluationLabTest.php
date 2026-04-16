@@ -88,7 +88,7 @@ class AdminEvaluationLabTest extends TestCase
         $response->assertViewHas('rows', function ($rows) use ($intern): bool {
             $row = collect($rows)->firstWhere('intern_id', $intern->id);
 
-            if (! is_array($row)) {
+            if ( ! is_array($row)) {
                 return false;
             }
 

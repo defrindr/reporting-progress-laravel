@@ -25,7 +25,7 @@ class AuthController extends Controller
             ->where('type', Period::TYPE_INTERNSHIP)
             ->exists();
 
-        if (! $hasInternshipPeriod) {
+        if ( ! $hasInternshipPeriod) {
             return response()->json([
                 'message' => 'Sebelum membuat user intern, buat dulu period magang (internship) untuk institusi ini.',
             ], 422);

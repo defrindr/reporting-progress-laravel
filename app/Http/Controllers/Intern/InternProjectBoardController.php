@@ -24,19 +24,19 @@ class InternProjectBoardController extends Controller
     {
         $user = Auth::user();
 
-        if (! $user instanceof User) {
+        if ( ! $user instanceof User) {
             abort(403);
         }
 
         $isManager = $user->canManageAllProjects();
         $canReassign = $user->isAdmin();
         $viewMode = $request->string('view_mode')->toString();
-        if (! in_array($viewMode, ['kanban', 'table'], true)) {
+        if ( ! in_array($viewMode, ['kanban', 'table'], true)) {
             $viewMode = 'kanban';
         }
 
         $statusFilter = $request->string('status')->toString();
-        if (! in_array($statusFilter, ['todo', 'doing', 'done'], true)) {
+        if ( ! in_array($statusFilter, ['todo', 'doing', 'done'], true)) {
             $statusFilter = null;
         }
 
@@ -50,7 +50,7 @@ class InternProjectBoardController extends Controller
 
         $accessState = $isManager ? ['is_read_only' => false, 'reason' => null] : $this->internAccessState($user);
 
-        if (! $isManager && $accessState['is_read_only']) {
+        if ( ! $isManager && $accessState['is_read_only']) {
             abort(403, (string) ($accessState['reason'] ?? 'Akses task board ditolak.'));
         }
 
@@ -60,14 +60,14 @@ class InternProjectBoardController extends Controller
         $sprints = Period::query()
             ->where('type', Period::TYPE_SPRINT)
             ->with('institution:id,name')
-            ->when(! $isManager, fn ($query) => $query->where('institution_id', $user->institution_id))
+            ->when( ! $isManager, fn ($query) => $query->where('institution_id', $user->institution_id))
             ->orderByDesc('start_date')
             ->get();
 
         $selectedSprintId = $request->integer('sprint_id');
         $selectedSprint = $sprints->firstWhere('id', $selectedSprintId);
 
-        if (! $selectedSprint) {
+        if ( ! $selectedSprint) {
             [$targetStart, $targetEnd] = SprintWindow::resolveRange(Carbon::now(), true);
 
             $selectedSprint = $sprints->first(function (Period $period) use ($targetStart, $targetEnd): bool {
@@ -76,7 +76,7 @@ class InternProjectBoardController extends Controller
             });
         }
 
-        if (! $selectedSprint) {
+        if ( ! $selectedSprint) {
             $selectedSprint = $sprints->first(function (Period $period): bool {
                 $today = now()->toDateString();
                 $startDate = Carbon::parse((string) $period->start_date)->toDateString();
@@ -127,7 +127,7 @@ class InternProjectBoardController extends Controller
 
         $taskQuery = Project::query()
             ->with(['spec:id,title,specification', 'assignee:id,name', 'creator:id,name', 'sprint:id,name,start_date,end_date', 'comments.user:id,name'])
-            ->when(! $isManager, fn ($query) => $query->where('assignee_id', $user->id))
+            ->when( ! $isManager, fn ($query) => $query->where('assignee_id', $user->id))
             ->when($filters['project_spec_id'], fn ($query, $value) => $query->where('project_spec_id', (int) $value))
             ->when($isManager && $filters['assignee_id'], fn ($query, $value) => $query->where('assignee_id', (int) $value))
             ->when($filters['status'], fn ($query, $value) => $query->where('status', $value))
@@ -196,7 +196,7 @@ class InternProjectBoardController extends Controller
 
         $user = $request->user();
 
-        if (! $user instanceof User) {
+        if ( ! $user instanceof User) {
             abort(403);
         }
 
@@ -213,7 +213,7 @@ class InternProjectBoardController extends Controller
             ->where('project_specs.id', (int) $validated['project_spec_id'])
             ->exists();
 
-        if (! $isAssigned) {
+        if ( ! $isAssigned) {
             return back()->withErrors(['project_spec_id' => 'Project tidak ter-assign untuk akun ini.'])->withInput();
         }
 
@@ -230,13 +230,13 @@ class InternProjectBoardController extends Controller
 
         if ($isWeekend) {
             $targetSprint = $this->resolveSprintByDate($user, (string) $validated['due_date']);
-        } elseif (! empty($validated['sprint_id'])) {
+        } elseif ( ! empty($validated['sprint_id'])) {
             $targetSprint = Period::query()
                 ->where('type', Period::TYPE_SPRINT)
                 ->where('institution_id', $user->institution_id)
                 ->find((int) $validated['sprint_id']);
 
-            if (! $targetSprint) {
+            if ( ! $targetSprint) {
                 return back()->withErrors(['sprint_id' => 'Sprint tidak valid untuk institusi intern.'])->withInput();
             }
         } else {
@@ -266,7 +266,7 @@ class InternProjectBoardController extends Controller
 
         $user = $request->user();
 
-        if (! $user instanceof User) {
+        if ( ! $user instanceof User) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthenticated'], 401);
             }
@@ -274,7 +274,7 @@ class InternProjectBoardController extends Controller
             abort(403);
         }
 
-        if (! $user->isAdmin()) {
+        if ( ! $user->isAdmin()) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Forbidden'], 403);
             }
@@ -294,7 +294,7 @@ class InternProjectBoardController extends Controller
 
         $newAssignee = $this->activeInternsQuery($this->resolveProjectInstitutionId($project))
             ->find((int) $validated['assignee_id']);
-        if (! $newAssignee) {
+        if ( ! $newAssignee) {
             $message = 'Assignee baru harus intern dengan periode internship aktif.';
 
             if ($request->expectsJson()) {
@@ -346,7 +346,7 @@ class InternProjectBoardController extends Controller
 
         $user = $request->user();
 
-        if (! $user instanceof User) {
+        if ( ! $user instanceof User) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthenticated'], 401);
             }
@@ -363,7 +363,7 @@ class InternProjectBoardController extends Controller
             abort(403);
         }
 
-        if (! $user->canManageAllProjects()) {
+        if ( ! $user->canManageAllProjects()) {
             $accessState = $this->internAccessState($user);
             if ($accessState['is_read_only']) {
                 if ($request->expectsJson()) {
@@ -402,11 +402,11 @@ class InternProjectBoardController extends Controller
     {
         $user = $request->user();
 
-        if (! $user instanceof User) {
+        if ( ! $user instanceof User) {
             abort(403);
         }
 
-        if (! $user->canManageAllProjects() && $project->assignee_id !== $user->id) {
+        if ( ! $user->canManageAllProjects() && $project->assignee_id !== $user->id) {
             abort(403);
         }
 
@@ -414,7 +414,7 @@ class InternProjectBoardController extends Controller
             abort(403);
         }
 
-        if (! $user->canManageAllProjects()) {
+        if ( ! $user->canManageAllProjects()) {
             $accessState = $this->internAccessState($user);
             if ($accessState['is_read_only']) {
                 return back()->withErrors(['project' => $accessState['reason']]);
@@ -435,7 +435,7 @@ class InternProjectBoardController extends Controller
 
         $next = $nextStatus[$project->status] ?? null;
 
-        if (! $next) {
+        if ( ! $next) {
             return back()->withErrors(['project' => 'Status project sudah final (done).']);
         }
 
@@ -452,15 +452,15 @@ class InternProjectBoardController extends Controller
 
         $user = $request->user();
 
-        if (! $user instanceof User) {
+        if ( ! $user instanceof User) {
             abort(403);
         }
 
-        if (! $user->canManageAllProjects() && $project->assignee_id !== $user->id) {
+        if ( ! $user->canManageAllProjects() && $project->assignee_id !== $user->id) {
             abort(403);
         }
 
-        if (! $user->canManageAllProjects()) {
+        if ( ! $user->canManageAllProjects()) {
             $accessState = $this->internAccessState($user);
             if ($accessState['is_read_only']) {
                 return back()->withErrors(['project' => $accessState['reason']]);
@@ -480,7 +480,7 @@ class InternProjectBoardController extends Controller
      */
     private function internAccessState(User $user): array
     {
-        if (! $user->institution_id) {
+        if ( ! $user->institution_id) {
             return [
                 'is_read_only' => true,
                 'reason' => 'Akun intern harus terhubung ke institusi dan period magang aktif.',
@@ -548,7 +548,7 @@ class InternProjectBoardController extends Controller
             ->orderByDesc('end_date')
             ->first();
 
-        if (! $previousSprint) {
+        if ( ! $previousSprint) {
             return;
         }
 
@@ -556,7 +556,7 @@ class InternProjectBoardController extends Controller
             ->where('period_id', $previousSprint->id)
             ->whereIn('status', ['todo', 'doing']);
 
-        if (! $isManager) {
+        if ( ! $isManager) {
             $carryQuery->where('assignee_id', $actor->id);
         }
 

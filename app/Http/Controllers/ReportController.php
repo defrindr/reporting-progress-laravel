@@ -22,7 +22,7 @@ class ReportController extends Controller
             ->where('institution_id', $validated['institution_id'])
             ->first();
 
-        if (! $period) {
+        if ( ! $period) {
             return response()->json([
                 'message' => 'Selected period does not belong to the selected institution',
             ], 422);

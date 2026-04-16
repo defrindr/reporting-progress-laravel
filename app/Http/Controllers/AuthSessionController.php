@@ -25,7 +25,7 @@ class AuthSessionController extends Controller
             'remember' => ['nullable', 'boolean'],
         ]);
 
-        if (! Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], $request->boolean('remember'))) {
+        if ( ! Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password']], $request->boolean('remember'))) {
             return back()
                 ->withErrors(['email' => 'Email atau password tidak valid.'])
                 ->onlyInput('email');

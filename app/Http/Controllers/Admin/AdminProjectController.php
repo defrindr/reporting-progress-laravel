@@ -115,7 +115,7 @@ class AdminProjectController extends Controller
         $activeProjectInterns = $this->projectActiveInterns($projectSpec);
 
         $scope = (string) ($validated['scope'] ?? 'backlog');
-        if (! in_array($scope, ['backlog', 'sprint', 'all'], true)) {
+        if ( ! in_array($scope, ['backlog', 'sprint', 'all'], true)) {
             $scope = 'backlog';
         }
 
@@ -341,12 +341,12 @@ class AdminProjectController extends Controller
             return back()->withErrors(['backlog_ids' => $activationError]);
         }
 
-        if (! $institutionId) {
+        if ( ! $institutionId) {
             return back()->withErrors(['backlog_ids' => 'Tidak bisa menentukan institusi untuk sprint otomatis.']);
         }
 
         [$targetSprint, $createdNewSprint] = $this->resolveTargetSprint($institutionId, true);
-        if (! $targetSprint) {
+        if ( ! $targetSprint) {
             return back()->withErrors(['backlog_ids' => 'Gagal menentukan sprint untuk aktivasi backlog.']);
         }
 
@@ -412,6 +412,7 @@ class AdminProjectController extends Controller
     /**
      * @param  array<int, int>  $selectedBacklogIds
      * @param  array<int, int>  $selectedAssigneeIds
+     *
      * @return array{0: ?int, 1: ?string}
      */
     private function resolveActivationInstitutionId(ProjectSpec $projectSpec, array $selectedBacklogIds, array $selectedAssigneeIds = []): array

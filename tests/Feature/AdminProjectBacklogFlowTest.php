@@ -111,7 +111,7 @@ class AdminProjectBacklogFlowTest extends TestCase
             ->assertRedirect();
 
         $backlogA->refresh();
-        $this->assertNotNull($backlogA->period_id);
+        static::assertNotNull($backlogA->period_id);
 
         $this->assertDatabaseHas('periods', [
             'id' => $backlogA->period_id,

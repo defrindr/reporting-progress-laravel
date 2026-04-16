@@ -133,7 +133,7 @@ class AdminEvaluationLabController extends Controller
         while ($cursor->lte($end)) {
             $dateString = $cursor->toDateString();
 
-            if (! $cursor->isWeekend() && ! $holidays->has($dateString)) {
+            if ( ! $cursor->isWeekend() && ! $holidays->has($dateString)) {
                 $dates->push($dateString);
             }
 
@@ -146,6 +146,7 @@ class AdminEvaluationLabController extends Controller
     /**
      * @param  Collection<int, User>  $targetInterns
      * @param  Collection<int, string>  $requiredDates
+     *
      * @return array{0: Collection<int, array{intern_id: int, name: string, required_days: int, submitted_days: int, missing_days: int, zero_days: int, final_score: float}>, 1: array<int, array<int, array{date: string, has_logbook: bool, task_count: int, score: float, note: string}>>}
      */
     private function buildEvaluationRows(Period $period, Collection $targetInterns, Collection $requiredDates): array
@@ -196,7 +197,7 @@ class AdminEvaluationLabController extends Controller
             ])->filter()->unique()->values();
 
             foreach ($touchDates as $dateKey) {
-                if (! $requiredDateSet->has((string) $dateKey)) {
+                if ( ! $requiredDateSet->has((string) $dateKey)) {
                     continue;
                 }
 
@@ -218,7 +219,7 @@ class AdminEvaluationLabController extends Controller
             foreach ($requiredDates as $dateKey) {
                 $hasLogbook = (bool) ($logbookMap[$internId][$dateKey] ?? false);
 
-                if (! $hasLogbook) {
+                if ( ! $hasLogbook) {
                     $score = 0.0;
                     $missingDays++;
                     $zeroDays++;
@@ -309,6 +310,7 @@ class AdminEvaluationLabController extends Controller
 
     /**
      * @param  Collection<int, array{intern_id: int, name: string, required_days: int, submitted_days: int, missing_days: int, zero_days: int, final_score: float}>  $rows
+     *
      * @return Collection<int, array{intern_id: int, name: string, required_days: int, submitted_days: int, missing_days: int, zero_days: int, final_score: float}>
      */
     private function sortRows(Collection $rows, string $sort, string $direction): Collection

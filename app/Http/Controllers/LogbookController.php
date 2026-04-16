@@ -34,7 +34,7 @@ class LogbookController extends Controller
         $reportDate = $data['report_date'];
         $user = $request->user();
 
-        if (! $user instanceof User) {
+        if ( ! $user instanceof User) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
@@ -49,7 +49,7 @@ class LogbookController extends Controller
 
         $activePeriod = $this->activeInternshipForUser($user, (string) $reportDate);
 
-        if (! $activePeriod) {
+        if ( ! $activePeriod) {
             return response()->json(['message' => 'No active period found for this report date'], 422);
         }
 
@@ -83,7 +83,7 @@ class LogbookController extends Controller
         $reportDate = $data['report_date'];
         $user = $request->user();
 
-        if (! $user instanceof User) {
+        if ( ! $user instanceof User) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
@@ -98,7 +98,7 @@ class LogbookController extends Controller
 
         $activePeriod = $this->activeInternshipForUser($user, (string) $reportDate);
 
-        if (! $activePeriod) {
+        if ( ! $activePeriod) {
             return response()->json(['message' => 'No active period found for this report date'], 422);
         }
 
@@ -129,7 +129,7 @@ class LogbookController extends Controller
      */
     private function internAccessState(User $user): array
     {
-        if (! $user->institution_id) {
+        if ( ! $user->institution_id) {
             return [
                 'is_read_only' => true,
                 'reason' => 'Akun intern harus terhubung ke institusi dan period magang aktif.',

@@ -41,7 +41,7 @@ class SprintPeriodResolver
             return [$overlappingSprint, false];
         }
 
-        if (! $createIfMissing) {
+        if ( ! $createIfMissing) {
             return [null, false];
         }
 
@@ -68,7 +68,7 @@ class SprintPeriodResolver
                 ->first();
         }
 
-        if (! $sprint) {
+        if ( ! $sprint) {
             return [null, false];
         }
 

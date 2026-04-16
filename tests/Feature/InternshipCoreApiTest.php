@@ -50,7 +50,7 @@ class InternshipCoreApiTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'baru@example.com']);
 
         $user = User::where('email', 'baru@example.com')->firstOrFail();
-        $this->assertTrue($user->hasRole('Intern'));
+        static::assertTrue($user->hasRole('Intern'));
     }
 
     public function test_only_admin_can_create_institution(): void

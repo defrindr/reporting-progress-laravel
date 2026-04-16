@@ -115,7 +115,7 @@ class LoginFlowTest extends TestCase
             ->assertRedirect();
 
         $user->refresh();
-        $this->assertTrue(Hash::check('new-password-123', $user->password));
+        static::assertTrue(Hash::check('new-password-123', $user->password));
 
         $this->post('/logout')->assertRedirect('/login');
 
@@ -160,7 +160,7 @@ class LoginFlowTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
 
-        $this->assertSame(
+        static::assertSame(
             1,
             Period::query()
                 ->where('institution_id', $institution->id)

@@ -17,11 +17,11 @@ class InternDashboardController extends Controller
     {
         $user = $request->user();
 
-        if (! $user instanceof User || ! $user->hasRole('Intern')) {
+        if ( ! $user instanceof User || ! $user->hasRole('Intern')) {
             abort(403);
         }
 
-        if (! $user->isActiveInternshipParticipant()) {
+        if ( ! $user->isActiveInternshipParticipant()) {
             abort(403, 'Kamu tidak terdaftar sebagai siswa magang pada period aktif saat ini.');
         }
 

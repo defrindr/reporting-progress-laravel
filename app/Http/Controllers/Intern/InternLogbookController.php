@@ -28,7 +28,7 @@ class InternLogbookController extends Controller
             ? ['is_read_only' => true, 'reason' => 'Supervisor/Admin hanya dapat melihat data logbook.']
             : $this->internAccessState($user);
 
-        if (! $isManager && $accessState['is_read_only']) {
+        if ( ! $isManager && $accessState['is_read_only']) {
             abort(403, (string) ($accessState['reason'] ?? 'Akses logbook ditolak.'));
         }
 
@@ -82,7 +82,7 @@ class InternLogbookController extends Controller
 
         $activePeriod = $this->activeInternshipForUser($user, (string) $reportDate);
 
-        if (! $activePeriod) {
+        if ( ! $activePeriod) {
             return back()->withErrors(['report_date' => 'Tidak ada periode aktif untuk tanggal ini.'])->withInput();
         }
 
@@ -119,7 +119,7 @@ class InternLogbookController extends Controller
             ], 403);
         }
 
-        if (! ($user instanceof User)) {
+        if ( ! ($user instanceof User)) {
             return response()->json([
                 'message' => 'Unauthenticated',
             ], 401);
@@ -314,7 +314,7 @@ class InternLogbookController extends Controller
      */
     private function internAccessState($user): array
     {
-        if (! $user || ! $user->institution_id) {
+        if ( ! $user || ! $user->institution_id) {
             return [
                 'is_read_only' => true,
                 'reason' => 'Akun intern harus terhubung ke institusi dan period magang aktif.',

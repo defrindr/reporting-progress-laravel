@@ -102,7 +102,7 @@ class ProjectController extends Controller
 
     public function addComment(Request $request, Project $project): JsonResponse
     {
-        if (! $request->user()) {
+        if ( ! $request->user()) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 

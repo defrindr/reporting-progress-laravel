@@ -78,11 +78,11 @@ class AdminPanelFormTest extends TestCase
             ->get('/admin/periods/new-users-csv?ids='.implode(',', $newUserIds));
 
         $csvResponse->assertOk();
-        $this->assertStringContainsString('batch1@example.com', (string) $csvResponse->streamedContent());
+        static::assertStringContainsString('batch1@example.com', (string) $csvResponse->streamedContent());
 
         $periodCreatedIntern = User::query()->where('email', 'batch1@example.com')->firstOrFail();
-        $this->assertTrue(Hash::check('password123', $periodCreatedIntern->password));
-        $this->assertTrue($periodCreatedIntern->hasRole('Intern'));
+        static::assertTrue(Hash::check('password123', $periodCreatedIntern->password));
+        static::assertTrue($periodCreatedIntern->hasRole('Intern'));
 
         $this->actingAs($admin)
             ->post('/admin/users', [
@@ -95,7 +95,7 @@ class AdminPanelFormTest extends TestCase
             ->assertRedirect();
 
         $intern = User::where('email', 'internweb@example.com')->firstOrFail();
-        $this->assertTrue($intern->hasRole('Intern'));
+        static::assertTrue($intern->hasRole('Intern'));
 
         $this->actingAs($admin)
             ->post('/admin/projects', [
@@ -183,7 +183,7 @@ class AdminPanelFormTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame(3, GlobalHoliday::query()->where('year', 2025)->where('country_code', 'ID')->count());
+        static::assertSame(3, GlobalHoliday::query()->where('year', 2025)->where('country_code', 'ID')->count());
 
         $this->assertDatabaseHas('global_holidays', [
             'holiday_date' => '2025-01-01',

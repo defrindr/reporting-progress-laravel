@@ -285,7 +285,7 @@ class LargeDatasetSeeder extends Seeder
         $periodIdsByInstitution = [];
 
         foreach ($rows as $row) {
-            if (! $row->institution_id) {
+            if ( ! $row->institution_id) {
                 continue;
             }
 
@@ -347,7 +347,7 @@ class LargeDatasetSeeder extends Seeder
             ]
         );
 
-        if (! $admin->institution_id && $institutionId) {
+        if ( ! $admin->institution_id && $institutionId) {
             $admin->update(['institution_id' => $institutionId]);
         }
 
@@ -356,6 +356,7 @@ class LargeDatasetSeeder extends Seeder
 
     /**
      * @param  array<int, int>  $universityIds
+     *
      * @return array{0: array<int, int>, 1: array<int, array{id: int, institution_id: int}>}
      */
     private function seedUsers(string $tag, int $supervisorCount, int $internCount, array $universityIds, string $now): array
@@ -487,6 +488,7 @@ class LargeDatasetSeeder extends Seeder
     /**
      * @param  array<int, int>  $creatorIds
      * @param  array<int, int>  $internIds
+     *
      * @return array{0: array<int, int>, 1: array<int, array<int, int>>}
      */
     private function seedProjectSpecsAndAssignments(
@@ -555,6 +557,7 @@ class LargeDatasetSeeder extends Seeder
      * @param  array<int, int>  $specIds
      * @param  array<int, array<int, int>>  $assignedInternBySpec
      * @param  array<int, int>  $internIds
+     *
      * @return array<int, int>
      */
     private function seedBacklogs(
@@ -637,7 +640,7 @@ class LargeDatasetSeeder extends Seeder
             $intern = $internRows[$i];
             $periods = $periodsByInstitution->get($intern['institution_id']);
 
-            if (! $periods || $periods->isEmpty()) {
+            if ( ! $periods || $periods->isEmpty()) {
                 continue;
             }
 

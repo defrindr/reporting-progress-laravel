@@ -115,6 +115,7 @@ class AdminDashboardController extends Controller
 
     /**
      * @param  array<int, int>  $activeInternIds
+     *
      * @return array{todo:int, doing:int, done:int}
      */
     private function taskStatusCounts(array $activeInternIds): array
@@ -138,6 +139,7 @@ class AdminDashboardController extends Controller
 
     /**
      * @param  array<int, int>  $activeInternIds
+     *
      * @return array{labels: array<int, string>, values: array<int, int>}
      */
     private function doneTrendDataset(array $activeInternIds, Carbon $today): array
@@ -176,6 +178,7 @@ class AdminDashboardController extends Controller
 
     /**
      * @param  Collection<int, User>  $activeInterns
+     *
      * @return Collection<int, array{name: string, done_count: int, completion_rate: float, overdue_open: int, weekly_logbooks: int}>
      */
     private function topInternKpiRows(Collection $activeInterns, Carbon $today): Collection

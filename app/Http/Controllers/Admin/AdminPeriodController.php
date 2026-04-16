@@ -279,7 +279,7 @@ class AdminPeriodController extends Controller
         [$nagerRows, $nagerOk] = $this->fetchNagerHolidays($year, $countryCode);
         [$denoRows, $denoOk] = $this->fetchLiburDenoHolidays($year, $countryCode);
 
-        if (! $nagerOk && ! $denoOk) {
+        if ( ! $nagerOk && ! $denoOk) {
             return back()->withErrors([
                 'global_holidays' => 'Gagal mengambil data hari libur dari dua sumber eksternal (Nager + libur.deno.dev). Coba lagi sebentar.',
             ]);
@@ -328,7 +328,7 @@ class AdminPeriodController extends Controller
                 ->acceptJson()
                 ->get(sprintf(self::NAGER_ENDPOINT, $year, $countryCode));
 
-            if (! $response->successful()) {
+            if ( ! $response->successful()) {
                 return [[], false];
             }
 
@@ -378,7 +378,7 @@ class AdminPeriodController extends Controller
                 ->acceptJson()
                 ->get(sprintf(self::DENO_LIBUR_ENDPOINT, $year));
 
-            if (! $response->successful()) {
+            if ( ! $response->successful()) {
                 return [[], false];
             }
 
@@ -501,7 +501,7 @@ class AdminPeriodController extends Controller
      */
     private function normalizeHolidays(?string $raw): array
     {
-        if (! $raw) {
+        if ( ! $raw) {
             return [];
         }
 
@@ -547,6 +547,7 @@ class AdminPeriodController extends Controller
 
     /**
      * @param  array<int, int>  $internIds
+     *
      * @return array<int, int>
      */
     private function resolveValidInternIdsForInstitution(int $institutionId, array $internIds): array
@@ -571,7 +572,7 @@ class AdminPeriodController extends Controller
      */
     private function normalizeNewUsersInput(?array $rows): array
     {
-        if (! $rows) {
+        if ( ! $rows) {
             return [];
         }
 
@@ -599,7 +600,7 @@ class AdminPeriodController extends Controller
                 continue;
             }
 
-            if (! filter_var($user['email'], FILTER_VALIDATE_EMAIL)) {
+            if ( ! filter_var($user['email'], FILTER_VALIDATE_EMAIL)) {
                 $errors[] = "Baris {$lineNumber}: email tidak valid.";
             }
         }

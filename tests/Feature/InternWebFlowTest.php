@@ -412,7 +412,7 @@ class InternWebFlowTest extends TestCase
         $response->assertJsonPath('meta.mode', 'weekly');
         $response->assertJsonPath('meta.generator', 'ai-local');
 
-        $this->assertStringContainsString('Task Selesai Weekly', (string) $response->json('done_tasks'));
-        $this->assertStringContainsString('Task Lanjutan Weekly', (string) $response->json('next_tasks'));
+        static::assertStringContainsString('Task Selesai Weekly', (string) $response->json('done_tasks'));
+        static::assertStringContainsString('Task Lanjutan Weekly', (string) $response->json('next_tasks'));
     }
 }

@@ -43,7 +43,7 @@ class UserController extends Controller
             'institution_id' => $validated['institution_id'] ?? null,
         ]);
 
-        if (! array_key_exists('roles', $validated)) {
+        if ( ! array_key_exists('roles', $validated)) {
             Role::findOrCreate('Intern', 'web');
         }
 
@@ -97,11 +97,11 @@ class UserController extends Controller
      */
     private function internOnboardingError(array $roles, ?int $institutionId): ?string
     {
-        if (! in_array('Intern', $roles, true)) {
+        if ( ! in_array('Intern', $roles, true)) {
             return null;
         }
 
-        if (! $institutionId) {
+        if ( ! $institutionId) {
             return 'User intern wajib memilih institusi terlebih dahulu.';
         }
 
@@ -110,7 +110,7 @@ class UserController extends Controller
             ->where('type', Period::TYPE_INTERNSHIP)
             ->exists();
 
-        if (! $hasInternshipPeriod) {
+        if ( ! $hasInternshipPeriod) {
             return 'Sebelum membuat user intern, buat dulu period magang (internship) untuk institusi ini.';
         }
 

@@ -25,11 +25,11 @@ class ProfilePasswordController extends Controller
         ]);
 
         $user = $request->user();
-        if (! $user instanceof User) {
+        if ( ! $user instanceof User) {
             abort(403);
         }
 
-        if (! Hash::check($validated['current_password'], $user->password)) {
+        if ( ! Hash::check($validated['current_password'], $user->password)) {
             return back()->withErrors([
                 'current_password' => 'Password saat ini tidak valid.',
             ]);

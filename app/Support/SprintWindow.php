@@ -49,7 +49,7 @@ class SprintWindow
     {
         $configured = config('sprint.workdays_iso', [1, 2, 3, 4, 5]);
 
-        if (! is_array($configured) || $configured === []) {
+        if ( ! is_array($configured) || $configured === []) {
             return [1, 2, 3, 4, 5];
         }
 
@@ -92,7 +92,7 @@ class SprintWindow
 
         do {
             $next->addDay();
-        } while (! in_array($next->dayOfWeekIso, $workdays, true));
+        } while ( ! in_array($next->dayOfWeekIso, $workdays, true));
 
         return $next;
     }

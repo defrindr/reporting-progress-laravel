@@ -119,7 +119,7 @@ class AdminUserController extends Controller
             'institution_id' => $validated['institution_id'] ?? null,
         ];
 
-        if (! empty($validated['password'])) {
+        if ( ! empty($validated['password'])) {
             $payload['password'] = Hash::make($validated['password']);
         }
 
@@ -152,11 +152,11 @@ class AdminUserController extends Controller
      */
     private function internOnboardingError(array $roles, ?int $institutionId): ?string
     {
-        if (! in_array('Intern', $roles, true)) {
+        if ( ! in_array('Intern', $roles, true)) {
             return null;
         }
 
-        if (! $institutionId) {
+        if ( ! $institutionId) {
             return 'User intern wajib memilih institusi terlebih dahulu.';
         }
 
@@ -165,7 +165,7 @@ class AdminUserController extends Controller
             ->where('type', Period::TYPE_INTERNSHIP)
             ->exists();
 
-        if (! $hasInternshipPeriod) {
+        if ( ! $hasInternshipPeriod) {
             return 'Sebelum membuat user intern, buat dulu period magang (internship) untuk institusi ini.';
         }
 
