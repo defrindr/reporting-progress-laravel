@@ -39,26 +39,20 @@
                 <p class="text-sm text-slate-500">Kelola period magang per institusi. Period sprint dibuat otomatis dari aktivasi sprint di halaman project detail.</p>
             </div>
 
-            <button type="button" onclick="document.getElementById('create-period-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Period</button>
+            <button type="button" onclick="document.getElementById('create-period-modal').showModal()" class="btn-primary">Tambah Period</button>
         </header>
 
         <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <h2 class="text-base font-semibold">Global Hari Libur</h2>
-                    <p class="mt-1 text-xs text-slate-500">Sinkronkan tanggal merah dari sumber eksternal sekali per tahun, lalu semua period otomatis mengambil tanggal dalam rentang period.</p>
+                    <p class="mt-1 text-xs text-slate-500">Kelola hari libur nasional dan perusahaan. Sinkronkan dari sumber eksternal atau tambahkan secara manual.</p>
                 </div>
 
-                <form method="POST" action="{{ route('admin.periods.global-holidays.sync') }}" class="flex flex-wrap items-center gap-2">
-                    @csrf
-                    <input type="number" name="year" min="2000" max="2100" value="{{ $globalHolidayYear }}" class="w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                    <select name="country_code" class="rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                        @foreach ($holidayCountries as $code => $name)
-                            <option value="{{ $code }}" @selected($selectedHolidayCountry === $code)>{{ $name }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Sync Tanggal Merah</button>
-                </form>
+                <a href="{{ route('admin.holidays.index', ['year' => $globalHolidayYear, 'country_code' => $selectedHolidayCountry]) }}"
+                    class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold btn-ghost">
+                    Kelola Hari Libur
+                </a>
             </div>
 
             <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -68,7 +62,7 @@
                 </div>
 
                 @if ($globalHolidays->isEmpty())
-                    <p class="text-sm text-slate-500">Belum ada data global hari libur untuk tahun ini. Klik tombol sync agar terisi otomatis.</p>
+                    <p class="text-sm text-slate-500">Belum ada data global hari libur untuk tahun ini. Klik tombol Kelola Hari Libur.</p>
                 @else
                     <div class="max-h-36 overflow-auto">
                         <ul class="space-y-1 text-sm text-slate-700">
@@ -121,8 +115,8 @@
                     <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
                 </select>
 
-                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan</button>
-                <a href="{{ route('admin.periods.index', ['holiday_year' => $globalHolidayYear, 'holiday_country' => $selectedHolidayCountry]) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold btn-ghost">Terapkan</button>
+                <a href="{{ route('admin.periods.index', ['holiday_year' => $globalHolidayYear, 'holiday_country' => $selectedHolidayCountry]) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm btn-ghost">Reset</a>
             </form>
         </article>
 
@@ -161,7 +155,7 @@
 
                                     <button
                                         type="button"
-                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700"
+class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold btn-ghost"
                                         data-edit-action="{{ route('admin.periods.update', $period) }}"
                                         data-institution-id="{{ $period->institution_id ?? '' }}"
                                         data-name="{{ $period->name }}"
@@ -298,7 +292,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan</button>
+            <button type="submit" class="btn-primary w-full">Simpan</button>
         </form>
     </dialog>
 
@@ -326,7 +320,7 @@
                 <p class="text-xs text-slate-500 lg:col-span-2">Kosongkan jika tidak ada tambahan libur khusus (global holiday tetap otomatis dipakai).</p>
             </div>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Update</button>
+            <button type="submit" class="btn-primary w-full">Update</button>
         </form>
     </dialog>
 
@@ -350,7 +344,7 @@
                 <p class="text-sm text-slate-500">Pilih period terlebih dahulu.</p>
             </div>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan List Siswa</button>
+            <button type="submit" class="btn-primary w-full">Simpan List Siswa</button>
         </form>
     </dialog>
 

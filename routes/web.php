@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEvaluationLabController;
+use App\Http\Controllers\Admin\AdminHolidayController;
 use App\Http\Controllers\Admin\AdminInstitutionController;
 use App\Http\Controllers\Admin\AdminPeriodController;
 use App\Http\Controllers\Admin\AdminProjectController;
@@ -91,6 +92,12 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/periods/{period}/participants', [AdminPeriodController::class, 'updateParticipants'])->name('periods.participants.update');
         Route::put('/periods/{period}', [AdminPeriodController::class, 'update'])->name('periods.update');
         Route::delete('/periods/{period}', [AdminPeriodController::class, 'destroy'])->name('periods.destroy');
+
+        Route::get('/holidays', [AdminHolidayController::class, 'index'])->name('holidays.index');
+        Route::post('/holidays', [AdminHolidayController::class, 'store'])->name('holidays.store');
+        Route::put('/holidays/{holiday}', [AdminHolidayController::class, 'update'])->name('holidays.update');
+        Route::delete('/holidays/{holiday}', [AdminHolidayController::class, 'destroy'])->name('holidays.destroy');
+        Route::post('/holidays/sync', [AdminHolidayController::class, 'sync'])->name('holidays.sync');
 
         Route::get('/projects', [AdminProjectController::class, 'index'])->name('projects.index');
         Route::post('/projects', [AdminProjectController::class, 'store'])->name('projects.store');
