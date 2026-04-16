@@ -30,8 +30,7 @@
                         class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
                 </div>
 
-                <button type="submit"
-                    class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan Password</button>
+                <button type="submit" class="btn-primary">Simpan Password</button>
             </form>
         </article>
     </section>

@@ -11,8 +11,8 @@
             </div>
 
             <div class="flex gap-2">
-                <a href="{{ route('admin.projects.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Kembali</a>
-                <button type="button" onclick="document.getElementById('create-backlog-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Backlog</button>
+                <a href="{{ route('admin.projects.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm btn-ghost">Kembali</a>
+                <button type="button" onclick="document.getElementById('create-backlog-modal').showModal()" class="btn-primary">Tambah Backlog</button>
             </div>
         </header>
 
@@ -72,8 +72,8 @@
                     <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
                 </select>
 
-                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan</button>
-                <a href="{{ route('admin.projects.show', [$project, 'scope' => $scope, 'sprint_id' => $sprintId ?: null]) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm btn-ghost">Terapkan</button>
+                <a href="{{ route('admin.projects.show', [$project, 'scope' => $scope, 'sprint_id' => $sprintId ?: null]) }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm btn-ghost">Reset</a>
             </form>
         </article>
 
@@ -108,7 +108,7 @@
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700"
+                                        class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold btn-ghost"
                                         data-edit-action="{{ route('admin.projects.backlogs.update', [$project, $backlog]) }}"
                                         data-title="{{ $backlog->title }}"
                                         data-description="{{ $backlog->description }}"
@@ -199,7 +199,7 @@
                     @endforelse
                 </div>
 
-                <button type="submit" @disabled($activationError || $interns->isEmpty()) class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400">Aktifkan Sprint</button>
+                <button type="submit" @disabled($activationError || $interns->isEmpty()) class="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-400">Aktifkan Sprint</button>
             </form>
         </article>
     </section>
@@ -232,7 +232,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan Backlog</button>
+            <button type="submit" class="btn-primary w-full">Simpan Backlog</button>
         </form>
     </dialog>
 
@@ -266,7 +266,7 @@
                 </select>
             </div>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Update Backlog</button>
+            <button type="submit" class="btn-primary w-full">Update Backlog</button>
         </form>
     </dialog>
 

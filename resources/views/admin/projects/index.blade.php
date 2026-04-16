@@ -8,7 +8,7 @@
                 <p class="text-sm text-slate-500">Flow baru: buat project lalu kelola backlog dan sprint di halaman detail project.</p>
             </div>
 
-            <button type="button" onclick="document.getElementById('create-project-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Project</button>
+            <button type="button" onclick="document.getElementById('create-project-modal').showModal()" class="btn-primary">Tambah Project</button>
         </header>
 
         <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -35,8 +35,8 @@
                     <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
                 </select>
 
-                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan</button>
-                <a href="{{ route('admin.projects.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold btn-ghost">Terapkan</button>
+                <a href="{{ route('admin.projects.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm btn-ghost">Reset</a>
             </form>
         </article>
 
@@ -64,11 +64,11 @@
                             </td>
                             <td class="px-4 py-3 align-top">
                                 <div class="flex flex-wrap gap-2">
-                                    <a href="{{ route('admin.projects.show', $project) }}" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Detail</a>
+                                    <a href="{{ route('admin.projects.show', $project) }}" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold btn-ghost">Detail</a>
 
                                     <button
                                         type="button"
-                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700"
+                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold btn-ghost"
                                         data-edit-action="{{ route('admin.projects.update', $project) }}"
                                         data-title="{{ $project->title }}"
                                         data-description="{{ $project->specification }}"
@@ -120,7 +120,7 @@
                 </select>
             </div>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan Project</button>
+            <button type="submit" class="btn-primary w-full">Simpan Project</button>
         </form>
     </dialog>
 
@@ -146,7 +146,7 @@
                 </select>
             </div>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Update Project</button>
+            <button type="submit" class="btn-primary w-full">Update Project</button>
         </form>
     </dialog>
 

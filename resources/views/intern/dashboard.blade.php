@@ -43,7 +43,7 @@
         </div>
 
         <div class="grid gap-5 xl:grid-cols-3">
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-1">
+            <article class="glass rounded-2xl p-5 xl:col-span-1">
                 <h2 class="text-base font-semibold">Status Task</h2>
                 <p class="mt-1 text-xs text-slate-500">Distribusi task berdasarkan status.</p>
                 <div class="mt-4 h-64">
@@ -51,7 +51,7 @@
                 </div>
             </article>
 
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+            <article class="glass rounded-2xl p-5 xl:col-span-2">
                 <h2 class="text-base font-semibold">Tren Penyelesaian 14 Hari</h2>
                 <p class="mt-1 text-xs text-slate-500">Progress task done harian untuk evaluasi ritme kerja.</p>
                 <div class="mt-4 h-64">
@@ -61,7 +61,7 @@
         </div>
 
         <div class="grid gap-5 xl:grid-cols-3">
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-1">
+            <article class="glass rounded-2xl p-5 xl:col-span-1">
                 <h2 class="text-base font-semibold">Komposisi Prioritas</h2>
                 <p class="mt-1 text-xs text-slate-500">Seberapa berat beban task berdasarkan level prioritas.</p>
                 <div class="mt-4 h-72">
@@ -69,7 +69,7 @@
                 </div>
             </article>
 
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+            <article class="glass rounded-2xl p-5 xl:col-span-2">
                 <h2 class="text-base font-semibold">Top Kontribusi Project</h2>
                 <p class="mt-1 text-xs text-slate-500">Project yang paling banyak kamu kerjakan.</p>
                 <div class="mt-4 h-72">
@@ -79,10 +79,10 @@
         </div>
 
         <div class="grid gap-5 xl:grid-cols-2">
-            <article class="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article class="glass overflow-x-auto rounded-2xl p-5">
                 <h2 class="text-base font-semibold">Task Prioritas Saat Ini</h2>
-                <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50 text-left text-slate-600">
+                <table class="mt-3 min-w-full divide-y divide-white/20 text-sm">
+                    <thead class="text-left text-slate-600">
                         <tr>
                             <th class="px-3 py-2">Task</th>
                             <th class="px-3 py-2">Project</th>
@@ -91,7 +91,7 @@
                             <th class="px-3 py-2">Due</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-white/10">
                         @forelse ($focusTasks as $task)
                             <tr>
                                 <td class="px-3 py-2 font-medium text-slate-700">{{ $task->title }}</td>
@@ -109,16 +109,16 @@
                 </table>
             </article>
 
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article class="glass rounded-2xl p-5">
                 <h2 class="text-base font-semibold">Aktivitas Terbaru</h2>
                 <ul class="mt-3 space-y-2 text-sm">
                     @forelse ($recentActivities as $activity)
-                        <li class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                        <li class="glass-dark rounded-xl border border-white/[0.06] px-3 py-2">
                             <p class="font-medium text-slate-700">{{ $activity->description }}</p>
                             <p class="mt-1 text-xs text-slate-500">{{ optional($activity->created_at)->diffForHumans() }}</p>
                         </li>
                     @empty
-                        <li class="rounded-xl border border-dashed border-slate-300 px-3 py-6 text-center text-slate-500">Belum ada aktivitas terbaru.</li>
+                        <li class="rounded-xl border border-dashed border-white/30 px-3 py-6 text-center text-slate-500">Belum ada aktivitas terbaru.</li>
                     @endforelse
                 </ul>
             </article>
@@ -164,8 +164,8 @@
                     datasets: [{
                         label: 'Done',
                         data: @json($charts['done_trend_values']),
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                        borderColor: '#1D546D',
+                        backgroundColor: 'rgba(29, 84, 109, 0.12)',
                         fill: true,
                         tension: 0.28,
                     }],
@@ -219,7 +219,7 @@
                     datasets: [{
                         label: 'Task',
                         data: @json($charts['project_values']),
-                        backgroundColor: '#0f172a',
+                        backgroundColor: '#1D546D',
                         borderRadius: 8,
                     }],
                 },

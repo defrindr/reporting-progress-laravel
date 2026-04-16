@@ -8,7 +8,7 @@
                 <p class="text-sm text-slate-500">Manajemen akun Admin, Supervisor, dan Intern lewat popup form.</p>
             </div>
 
-            <button type="button" onclick="document.getElementById('create-user-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah User</button>
+            <button type="button" onclick="document.getElementById('create-user-modal').showModal()" class="btn-primary">Tambah User</button>
         </header>
 
         <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -42,8 +42,8 @@
                     <option value="asc" @selected(($filters['direction'] ?? '') === 'asc')>ASC</option>
                 </select>
 
-                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan</button>
-                <a href="{{ route('admin.users.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold btn-ghost">Terapkan</button>
+                <a href="{{ route('admin.users.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm btn-ghost">Reset</a>
             </form>
         </article>
 
@@ -70,7 +70,7 @@
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700"
+                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold btn-ghost"
                                         data-edit-action="{{ route('admin.users.update', $user) }}"
                                         data-name="{{ $user->name }}"
                                         data-email="{{ $user->email }}"
@@ -136,7 +136,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan User</button>
+            <button type="submit" class="btn-primary w-full">Simpan User</button>
         </form>
     </dialog>
 
@@ -175,7 +175,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Update User</button>
+            <button type="submit" class="btn-primary w-full">Update User</button>
         </form>
     </dialog>
 

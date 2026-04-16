@@ -8,7 +8,7 @@
                 <p class="text-sm text-slate-500">Manajemen role sistem dengan popup form tambah/edit.</p>
             </div>
 
-            <button type="button" onclick="document.getElementById('create-role-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Role</button>
+            <button type="button" onclick="document.getElementById('create-role-modal').showModal()" class="btn-primary">Tambah Role</button>
         </header>
 
         <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -26,8 +26,8 @@
                     <option value="desc" @selected(($filters['direction'] ?? '') === 'desc')>DESC</option>
                 </select>
 
-                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan</button>
-                <a href="{{ route('admin.roles.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold btn-ghost">Terapkan</button>
+                <a href="{{ route('admin.roles.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm btn-ghost">Reset</a>
             </form>
         </article>
 
@@ -49,7 +49,7 @@
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700"
+                                        class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold btn-ghost"
                                         data-role-id="{{ $role->id }}"
                                         data-role-name="{{ $role->name }}"
                                         data-role-action="{{ route('admin.roles.update', $role) }}"
@@ -85,7 +85,7 @@
 
             <input name="name" type="text" required placeholder="Nama role (contoh: Supervisor)" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-900">
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan</button>
+            <button type="submit" class="btn-primary w-full">Simpan</button>
         </form>
     </dialog>
 
@@ -101,7 +101,7 @@
 
             <input id="edit-role-name" name="name" type="text" required class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-slate-900">
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Update</button>
+            <button type="submit" class="btn-primary w-full">Update</button>
         </form>
     </dialog>
 

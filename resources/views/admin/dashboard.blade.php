@@ -40,7 +40,7 @@
         </div>
 
         <div class="grid gap-5 xl:grid-cols-3">
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-1">
+            <article class="glass rounded-2xl p-5 xl:col-span-1">
                 <h2 class="text-base font-semibold">Distribusi Status Task</h2>
                 <p class="mt-1 text-xs text-slate-500">Komposisi todo, doing, dan done untuk intern aktif.</p>
                 <div class="mt-4 h-64">
@@ -48,7 +48,7 @@
                 </div>
             </article>
 
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+            <article class="glass rounded-2xl p-5 xl:col-span-2">
                 <h2 class="text-base font-semibold">Tren Task Selesai 14 Hari Terakhir</h2>
                 <p class="mt-1 text-xs text-slate-500">Indikator ritme delivery intern secara harian.</p>
                 <div class="mt-4 h-64">
@@ -58,7 +58,7 @@
         </div>
 
         <div class="grid gap-5 xl:grid-cols-3">
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-1">
+            <article class="glass rounded-2xl p-5 xl:col-span-1">
                 <h2 class="text-base font-semibold">Top Produktivitas Intern</h2>
                 <p class="mt-1 text-xs text-slate-500">Ranking berdasarkan jumlah task done.</p>
                 <div class="mt-4 h-72">
@@ -66,14 +66,14 @@
                 </div>
             </article>
 
-            <article class="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+            <article class="glass overflow-x-auto rounded-2xl p-5 xl:col-span-2">
                 <div class="mb-3 flex items-center justify-between gap-2">
                     <h2 class="text-base font-semibold">Tabel KPI Intern</h2>
-                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">Weekly Snapshot</span>
+                    <span class="rounded-full bg-white/60 px-2.5 py-1 text-xs text-slate-600 backdrop-blur-sm">Weekly Snapshot</span>
                 </div>
 
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50 text-left text-slate-600">
+                <table class="min-w-full divide-y divide-white/20 text-sm">
+                    <thead class="text-left text-slate-600">
                         <tr>
                             <th class="px-3 py-2">Intern</th>
                             <th class="px-3 py-2">Done</th>
@@ -82,7 +82,7 @@
                             <th class="px-3 py-2">Logbook Minggu Ini</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-white/10">
                         @forelse ($topInterns as $intern)
                             <tr>
                                 <td class="px-3 py-2 font-medium text-slate-700">{{ $intern['name'] }}</td>
@@ -102,28 +102,28 @@
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article class="glass rounded-2xl p-4">
                 <p class="text-xs uppercase tracking-wide text-slate-500">Total Users</p>
                 <p class="mt-2 text-2xl font-semibold">{{ $stats['users'] }}</p>
             </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article class="glass rounded-2xl p-4">
                 <p class="text-xs uppercase tracking-wide text-slate-500">Total Institutions</p>
                 <p class="mt-2 text-2xl font-semibold">{{ $stats['institutions'] }}</p>
             </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article class="glass rounded-2xl p-4">
                 <p class="text-xs uppercase tracking-wide text-slate-500">Total Project Specs</p>
                 <p class="mt-2 text-2xl font-semibold">{{ $stats['project_specs'] }}</p>
             </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article class="glass rounded-2xl p-4">
                 <p class="text-xs uppercase tracking-wide text-slate-500">Total Logbooks</p>
                 <p class="mt-2 text-2xl font-semibold">{{ $stats['logbooks'] }}</p>
             </article>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <a href="{{ route('admin.users.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">Kelola Users</a>
-            <a href="{{ route('admin.periods.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">Kelola Periods</a>
-            <a href="{{ route('admin.projects.index') }}" class="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700">Kelola Projects</a>
+            <a href="{{ route('admin.users.index') }}" class="glass rounded-2xl p-5 text-sm font-medium hover:bg-white/20">Kelola Users</a>
+            <a href="{{ route('admin.periods.index') }}" class="glass rounded-2xl p-5 text-sm font-medium hover:bg-white/20">Kelola Periods</a>
+            <a href="{{ route('admin.projects.index') }}" class="glass rounded-2xl p-5 text-sm font-medium hover:bg-white/20">Kelola Projects</a>
         </div>
     </section>
 
@@ -165,8 +165,8 @@
                     datasets: [{
                         label: 'Task Done',
                         data: @json($charts['done_trend_values']),
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                        borderColor: '#1D546D',
+                        backgroundColor: 'rgba(29, 84, 109, 0.12)',
                         fill: true,
                         tension: 0.28,
                     }],
@@ -191,7 +191,7 @@
                     datasets: [{
                         label: 'Done',
                         data: @json($charts['top_intern_done_values']),
-                        backgroundColor: '#0f172a',
+                        backgroundColor: '#1D546D',
                         borderRadius: 8,
                     }],
                 },

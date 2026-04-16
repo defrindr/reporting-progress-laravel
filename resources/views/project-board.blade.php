@@ -29,25 +29,24 @@
     <section class="space-y-6">
         <header>
             <h1 class="text-2xl font-semibold tracking-tight">Task Board</h1>
-            <p class="mt-1 text-sm text-slate-500">Board kanban ditampilkan per sprint dan mendukung drag-and-drop status
-                task.</p>
+            <p class="mt-1 text-sm text-slate-500">Board kanban ditampilkan per sprint dan mendukung drag-and-drop status task.</p>
         </header>
 
         @if (!$isManager && $isInternReadOnly)
-            <article class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+            <article class="glass rounded-xl border border-amber-300/50 p-4 text-sm text-amber-900">
                 <p class="font-semibold">Mode Read-Only</p>
                 <p class="mt-1">{{ $readOnlyReason ?? 'Tidak ada periode aktif untuk tanggal ini.' }}</p>
             </article>
         @endif
 
         @if (!$isManager && !$isInternReadOnly && $isWeekendRestriction)
-            <article class="rounded-xl border border-sky-300 bg-sky-50 p-4 text-sm text-sky-900">
+            <article class="glass rounded-xl border border-sky-300/50 p-4 text-sm text-sky-900">
                 <p class="font-semibold">Mode Weekend</p>
                 <p class="mt-1">Sabtu/Minggu tidak bisa ubah status kanban. Kamu tetap bisa tambah backlog untuk minggu depan (due date mulai {{ $nextWeekStartDate ?? '-' }}).</p>
             </article>
         @endif
 
-        <details class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" @if($hasFilterQuery) open @endif>
+        <details class="group glass rounded-2xl p-5" @if($hasFilterQuery) open @endif>
             <summary class="flex cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
                 <span>Filter Sprint & Task</span>
                 <svg class="h-5 w-5 shrink-0 transition duration-300 group-open:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -55,11 +54,11 @@
                 </svg>
             </summary>
 
-            <div class="mt-4 space-y-4 border-t border-slate-100 pt-4">
+            <div class="mt-4 space-y-4 border-t border-white/20 pt-4">
                 <form method="GET" action="{{ route('projects.board') }}" class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <input type="hidden" name="view_mode" value="{{ $viewMode }}">
 
-                    <select name="sprint_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <select name="sprint_id" class="rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm backdrop-blur-sm">
                         <option value="">Pilih Sprint</option>
                         @foreach ($sprints as $sprint)
                             <option value="{{ $sprint->id }}" @selected($selectedSprint?->id === $sprint->id)>
@@ -68,7 +67,7 @@
                         @endforeach
                     </select>
 
-                    <select name="project_spec_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <select name="project_spec_id" class="rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm backdrop-blur-sm">
                         <option value="">Semua Project</option>
                         @foreach ($projectFilters as $projectOption)
                             <option value="{{ $projectOption->id }}" @selected((int) ($filters['project_spec_id'] ?? 0) === (int) $projectOption->id)>
@@ -78,7 +77,7 @@
                     </select>
 
                     @if ($isManager)
-                        <select name="assignee_id" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                        <select name="assignee_id" class="rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm backdrop-blur-sm">
                             <option value="">Semua Intern</option>
                             @foreach ($assigneeFilters as $assigneeOption)
                                 <option value="{{ $assigneeOption->id }}" @selected((int) ($filters['assignee_id'] ?? 0) === (int) $assigneeOption->id)>
@@ -88,29 +87,29 @@
                         </select>
                     @endif
 
-                    <select name="status" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm">
+                    <select name="status" class="rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm backdrop-blur-sm">
                         <option value="">Semua Status</option>
                         <option value="todo" @selected(($filters['status'] ?? null) === 'todo')>todo</option>
                         <option value="doing" @selected(($filters['status'] ?? null) === 'doing')>doing</option>
                         <option value="done" @selected(($filters['status'] ?? null) === 'done')>done</option>
                     </select>
 
-                    <label class="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-700">
-                        <input type="checkbox" name="overdue" value="1" class="h-4 w-4 rounded border-slate-300 text-slate-900"
+                    <label class="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm text-slate-700 backdrop-blur-sm">
+                        <input type="checkbox" name="overdue" value="1" class="h-4 w-4 rounded border-white/30 text-[#1D546D]"
                             @checked(!empty($filters['overdue']))>
                         Overdue saja
                     </label>
 
                     <input name="keyword" type="text" value="{{ $filters['keyword'] ?? '' }}"
                         placeholder="Cari task/deskripsi/project..."
-                        class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm md:col-span-2 xl:col-span-1">
+                        class="rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm md:col-span-2 xl:col-span-1 backdrop-blur-sm">
 
                     <div class="flex gap-2 md:col-span-2 xl:col-span-4">
                         <button type="submit"
-                            class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan
+                            class="rounded-xl border border-white/30 bg-white/60 px-4 py-2.5 text-sm hover:bg-white/80 backdrop-blur-sm">Terapkan
                             Filter</button>
                         <a href="{{ route('projects.board') }}"
-                            class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
+                            class="rounded-xl border border-white/30 bg-white/60 px-4 py-2.5 text-center text-sm hover:bg-white/80 backdrop-blur-sm">Reset</a>
                     </div>
                 </form>
 
@@ -122,12 +121,12 @@
                     <div class="flex flex-wrap gap-2">
                         @if ($previousSprintId)
                             <a href="{{ route('projects.board', array_merge(request()->except('page'), ['sprint_id' => $previousSprintId])) }}"
-                                class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700">Week
+                                class="rounded-xl border border-white/30 bg-white/60 px-4 py-2 text-xs hover:bg-white/80 backdrop-blur-sm">Week
                                 Sebelumnya</a>
                         @endif
                         @if ($nextSprintId)
                             <a href="{{ route('projects.board', array_merge(request()->except('page'), ['sprint_id' => $nextSprintId])) }}"
-                                class="rounded-xl border border-slate-300 px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700">Week
+                                class="rounded-xl border border-white/30 bg-white/60 px-4 py-2 text-xs hover:bg-white/80 backdrop-blur-sm">Week
                                 Berikutnya</a>
                         @endif
                     </div>
@@ -138,17 +137,17 @@
         </details>
 
         @if ($isManager)
-            <nav class="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+            <nav class="inline-flex rounded-xl border border-white/20 p-1">
                 <a href="{{ route('projects.board', array_merge(request()->except('page'), ['view_mode' => 'kanban'])) }}"
-                    class="rounded-lg px-4 py-2 text-sm {{ $viewMode === 'kanban' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">Kanban</a>
+                    class="rounded-lg px-4 py-2 text-sm {{ $viewMode === 'kanban' ? 'bg-[#1D546D] text-white' : 'text-slate-600 hover:bg-white/30' }}">Kanban</a>
                 <a href="{{ route('projects.board', array_merge(request()->except('page'), ['view_mode' => 'table'])) }}"
-                    class="rounded-lg px-4 py-2 text-sm {{ $viewMode === 'table' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}">Table</a>
+                    class="rounded-lg px-4 py-2 text-sm {{ $viewMode === 'table' ? 'bg-[#1D546D] text-white' : 'text-slate-600 hover:bg-white/30' }}">Table</a>
             </nav>
         @endif
 
         @if (!$isManager)
             <details
-                class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm [&_summary::-webkit-details-marker]:hidden">
+                class="group glass rounded-2xl p-5 [&_summary::-webkit-details-marker]:hidden">
                 <summary
                     class="flex cursor-pointer items-center justify-between gap-1.5 text-lg font-semibold text-slate-900 list-none">
                     Tambah Task Pribadi Intern
@@ -159,9 +158,8 @@
                     </svg>
                 </summary>
 
-                <div class="mt-4 border-t border-slate-100 pt-4">
-                    <p class="text-sm text-slate-500">Task harus memilih project dan due date. Sprint akan pakai sprint
-                        aktif atau otomatis dari due date.</p>
+                <div class="mt-4 border-t border-white/20 pt-4">
+                    <p class="text-sm text-slate-500">Task harus memilih project dan due date. Sprint akan pakai sprint aktif atau otomatis dari due date.</p>
                     @if ($isInternReadOnly)
                         <p class="mt-2 text-xs font-medium text-amber-700">Form dinonaktifkan karena akun intern berada di mode read-only.</p>
                     @elseif ($isWeekendRestriction)
@@ -175,7 +173,7 @@
 
                         <select name="project_spec_id" required
                             @disabled($isInternReadOnly)
-                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100">
+                            class="rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-white/30 backdrop-blur-sm">
                             <option value="">Pilih Project</option>
                             @foreach ($availableProjects as $projectOption)
                                 <option value="{{ $projectOption->id }}">{{ $projectOption->title }}</option>
@@ -185,18 +183,18 @@
                         <input name="due_date" type="date" required
                             min="{{ $isWeekendRestriction ? $nextWeekStartDate : '' }}"
                             @disabled($isInternReadOnly)
-                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100">
+                            class="rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-white/30 backdrop-blur-sm">
 
                         <input name="title" type="text" required placeholder="Nama task"
                             @disabled($isInternReadOnly)
-                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2 disabled:cursor-not-allowed disabled:bg-slate-100">
+                            class="rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm lg:col-span-2 disabled:cursor-not-allowed disabled:bg-white/30 backdrop-blur-sm">
 
                         <textarea name="description" rows="3" placeholder="Detail task tambahan (opsional)"
                             @disabled($isInternReadOnly)
-                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm lg:col-span-2 disabled:cursor-not-allowed disabled:bg-slate-100"></textarea>
+                            class="rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm lg:col-span-2 disabled:cursor-not-allowed disabled:bg-white/30 backdrop-blur-sm"></textarea>
 
                         <select name="priority" @disabled($isInternReadOnly)
-                            class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-slate-100">
+                            class="rounded-xl border border-white/30 bg-white/60 px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-white/30 backdrop-blur-sm">
                             <option value="low">low</option>
                             <option value="medium" selected>medium</option>
                             <option value="high">high</option>
@@ -205,7 +203,7 @@
 
                         <button type="submit"
                             @disabled($isInternReadOnly)
-                            class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan
+                            class="rounded-xl bg-[#1D546D] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#163F52]">Simpan
                             Task</button>
                     </form>
                 </div>
@@ -215,41 +213,40 @@
         @if (!$isManager || $viewMode === 'kanban')
             <div class="grid gap-4 lg:grid-cols-3" data-kanban-board>
             @foreach ($groups as $status => $label)
-                <article class="kanban-drop-zone rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                <article class="kanban-drop-zone glass-dark rounded-2xl border border-dashed border-slate-300/50 p-4"
                     data-drop-status="{{ $status }}">
                     <div class="mb-3 flex items-center justify-between">
                         <h2 class="text-sm font-semibold text-slate-800">{{ $label }}</h2>
-                        <span
-                            class="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700">{{ $taskItems->where('status', $status)->count() }}</span>
+                        <span class="glass-badge text-slate-700">{{ $taskItems->where('status', $status)->count() }}</span>
                     </div>
 
                     <div class="space-y-3">
                         @forelse ($taskItems->where('status', $status) as $project)
                             @php($canDrag = !$isManager && !$isInternReadOnly && !$isWeekendRestriction && auth()->id() === $project->assignee_id)
-                            <div class="kanban-card rounded-xl border border-slate-200 bg-white p-3 shadow-sm {{ $canDrag ? 'cursor-grab' : '' }}"
+                            <div class="kanban-card {{ $canDrag ? 'cursor-grab' : '' }}"
                                 draggable="{{ $canDrag ? 'true' : 'false' }}" data-project-id="{{ $project->id }}"
                                 data-current-status="{{ $project->status }}">
                                 <div class="flex items-start justify-between gap-2">
                                     <h3 class="text-sm font-semibold text-slate-900">{{ $project->title }}</h3>
-                                    <span class="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase text-slate-600">{{ $project->status }}</span>
+                                    <span class="kanban-badge text-slate-600">{{ $project->status }}</span>
                                 </div>
 
                                 <div class="mt-2 grid gap-1.5 text-[11px] text-slate-600">
-                                    <p class="inline-flex items-center gap-1.5 rounded-md bg-slate-50 px-2 py-1">
+                                    <p class="inline-flex items-center gap-1.5 kanban-meta">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 14a4 4 0 10-8 0m8 0a4 4 0 018 0m-8 0v1a3 3 0 003 3h2a3 3 0 003-3v-1m-8 0H8m0 0a4 4 0 00-8 0m8 0v1a3 3 0 01-3 3H3a3 3 0 01-3-3v-1" />
                                         </svg>
                                         {{ $project->assignee?->name ?? 'Unassigned' }}
                                     </p>
 
-                                    <p class="inline-flex items-center gap-1.5 rounded-md bg-slate-50 px-2 py-1">
+                                    <p class="inline-flex items-center gap-1.5 kanban-meta">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 17v-2a4 4 0 014-4h4m0 0l-3-3m3 3l-3 3M5 3h14a2 2 0 012 2v4a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
                                         </svg>
                                         {{ $project->spec?->title ?? '-' }}
                                     </p>
 
-                                    <p class="inline-flex items-center gap-1.5 rounded-md bg-slate-50 px-2 py-1">
+                                    <p class="inline-flex items-center gap-1.5 kanban-meta">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z" />
                                         </svg>
@@ -260,8 +257,7 @@
                                 <p class="mt-2 text-xs text-slate-600">{{ \Illuminate\Support\Str::limit($project->description ?: 'Tanpa deskripsi', 90) }}</p>
 
                                 @if ($canDrag)
-                                    <p class="mt-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">Drag card
-                                        ini ke kolom lain untuk ubah status</p>
+                                    <p class="mt-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">Drag card ini ke kolom lain untuk ubah status</p>
                                 @endif
 
                                 @if (!$isManager && auth()->id() === $project->assignee_id && !$isInternReadOnly && !$isWeekendRestriction)
@@ -269,13 +265,13 @@
                                         class="mt-3 flex items-center gap-2 text-xs">
                                         @csrf
                                         @method('PATCH')
-                                        <select name="status" class="rounded-lg border border-slate-300 px-2 py-1.5">
+                                        <select name="status" class="rounded-lg border border-white/30 bg-white/60 px-2 py-1.5 backdrop-blur-sm">
                                             <option value="todo" @selected($project->status === 'todo')>todo</option>
                                             <option value="doing" @selected($project->status === 'doing')>doing</option>
                                             <option value="done" @selected($project->status === 'done')>done</option>
                                         </select>
                                         <button type="submit"
-                                            class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Set
+                                            class="rounded-lg border border-white/30 bg-white/60 px-3 py-1.5 font-medium hover:bg-white/80 backdrop-blur-sm">Set
                                             Status</button>
                                     </form>
                                 @elseif (!$isManager && auth()->id() === $project->assignee_id && $isWeekendRestriction)
@@ -290,7 +286,7 @@
                                             class="mt-3 flex items-center gap-2 text-xs">
                                             @csrf
                                             @method('PATCH')
-                                            <select name="assignee_id" class="rounded-lg border border-slate-300 px-2 py-1.5" required>
+                                            <select name="assignee_id" class="rounded-lg border border-white/30 bg-white/60 px-2 py-1.5 backdrop-blur-sm" required>
                                                 @foreach ($assigneeFilters as $assigneeOption)
                                                     <option value="{{ $assigneeOption->id }}" @selected((int) $project->assignee_id === (int) $assigneeOption->id)>
                                                         {{ $assigneeOption->name }}
@@ -298,7 +294,7 @@
                                                 @endforeach
                                             </select>
                                             <button type="submit"
-                                                class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Ubah
+                                                class="rounded-lg border border-white/30 bg-white/60 px-3 py-1.5 font-medium hover:bg-white/80 backdrop-blur-sm">Ubah
                                                 Assignee</button>
                                         </form>
                                     @else
@@ -306,20 +302,20 @@
                                     @endif
                                 @endif
 
-                                <details class="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                                <details class="mt-3 rounded-lg border border-white/20 bg-white/50 p-2.5 backdrop-blur-sm">
                                     <summary class="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-500">Lihat Detail Lengkap</summary>
 
                                     <div class="mt-2 space-y-3">
-                                        <div class="rounded-lg border border-slate-100 bg-white p-2">
+                                        <div class="glass-dark rounded-lg border border-white/[0.06] p-2">
                                             <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Deskripsi</p>
                                             <p class="mt-1 text-xs text-slate-700">{{ $project->description ?: 'Tanpa deskripsi' }}</p>
                                         </div>
 
-                                        <div class="rounded-lg border border-slate-100 bg-white p-2">
+                                        <div class="glass-dark rounded-lg border border-white/[0.06] p-2">
                                             <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">History</p>
                                             <ul class="mt-2 space-y-1 text-xs text-slate-600">
                                                 @forelse (($activityByProject[$project->id] ?? collect())->take(6) as $activity)
-                                                    <li class="rounded bg-slate-50 px-2 py-1.5">
+                                                    <li class="glass-dark rounded bg-white/50 px-2 py-1.5 backdrop-blur-sm">
                                                         {{ $activity->description }}
                                                         <span class="text-slate-400">({{ $activity->created_at }})</span>
                                                     </li>
@@ -329,11 +325,11 @@
                                             </ul>
                                         </div>
 
-                                        <div class="rounded-lg border border-slate-100 bg-white p-2">
+                                        <div class="glass-dark rounded-lg border border-white/[0.06] p-2">
                                             <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Comments</p>
                                             <ul class="mt-2 space-y-1 text-xs text-slate-700">
                                                 @forelse ($project->comments->take(5) as $comment)
-                                                    <li class="rounded bg-slate-50 px-2 py-1.5"><span
+                                                    <li class="glass-dark rounded bg-white/50 px-2 py-1.5 backdrop-blur-sm"><span
                                                             class="font-medium">{{ $comment->user?->name }}:</span>
                                                         {{ $comment->body }}</li>
                                                 @empty
@@ -345,9 +341,9 @@
                                                 class="mt-2 space-y-2">
                                                 @csrf
                                                 <textarea name="body" rows="2" required placeholder="Tambah komentar..."
-                                                    class="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs"></textarea>
+                                                    class="w-full rounded-lg border border-white/30 bg-white/60 px-2.5 py-2 text-xs backdrop-blur-sm"></textarea>
                                                 <button type="submit"
-                                                    class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700">Post
+                                                    class="rounded-lg bg-[#1D546D] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#163F52]">Post
                                                     Comment</button>
                                             </form>
                                         </div>
@@ -356,7 +352,7 @@
                             </div>
                         @empty
                             <p
-                                class="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-6 text-center text-xs text-slate-500">
+                                class="rounded-xl border border-dashed border-white/30 bg-white/50 px-3 py-6 text-center text-xs text-slate-500 backdrop-blur-sm">
                                 Tidak ada project.</p>
                         @endforelse
                     </div>
@@ -370,10 +366,10 @@
         </div>
 
         @if ($isManager && $viewMode === 'table')
-            <article class="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article class="glass overflow-x-auto rounded-2xl p-4">
                 <h2 class="mb-3 text-base font-semibold">Tabel Monitoring Task</h2>
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50 text-left text-slate-600">
+                <table class="min-w-full divide-y divide-white/20 text-sm">
+                    <thead class="text-left text-slate-600">
                         <tr>
                             <th class="px-3 py-2">Tanggal</th>
                             <th class="px-3 py-2">Project</th>
@@ -388,7 +384,7 @@
                             @endif
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-white/10">
                         @forelse ($tasks as $task)
                             <tr>
                                 <td class="px-3 py-2">{{ optional($task->created_at)->toDateString() }}</td>
@@ -406,7 +402,7 @@
                                                 <form method="POST" action="{{ route('projects.reassign', $task) }}" class="flex items-center gap-2">
                                                     @csrf
                                                     @method('PATCH')
-                                                    <select name="assignee_id" class="rounded-lg border border-slate-300 px-2 py-1.5 text-xs" required>
+                                                    <select name="assignee_id" class="rounded-lg border border-white/30 bg-white/60 px-2 py-1.5 text-xs backdrop-blur-sm" required>
                                                         @foreach ($assigneeFilters as $assigneeOption)
                                                             <option value="{{ $assigneeOption->id }}" @selected((int) $task->assignee_id === (int) $assigneeOption->id)>
                                                                 {{ $assigneeOption->name }}
@@ -414,7 +410,7 @@
                                                         @endforeach
                                                     </select>
                                                     <button type="submit"
-                                                        class="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Simpan</button>
+                                                        class="rounded-lg border border-white/30 bg-white/60 px-2.5 py-1.5 text-xs font-medium hover:bg-white/80 backdrop-blur-sm">Simpan</button>
                                                 </form>
                                             @else
                                                 <span class="text-xs text-amber-700">Tidak ada intern aktif</span>
@@ -427,8 +423,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $canReassign ? 9 : 8 }}" class="px-3 py-6 text-center text-sm text-slate-500">Tidak ada task
-                                    pada sprint ini.</td>
+                                <td colspan="{{ $canReassign ? 9 : 8 }}" class="px-3 py-6 text-center text-sm text-slate-500">Tidak ada task pada sprint ini.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -467,16 +462,16 @@
                     }
 
                     event.preventDefault();
-                    dropZone.classList.add('ring-2', 'ring-slate-300');
+                    dropZone.classList.add('ring-2', 'ring-[#1D546D]/30');
                 });
 
                 dropZone.addEventListener('dragleave', () => {
-                    dropZone.classList.remove('ring-2', 'ring-slate-300');
+                    dropZone.classList.remove('ring-2', 'ring-[#1D546D]/30');
                 });
 
                 dropZone.addEventListener('drop', async (event) => {
                     event.preventDefault();
-                    dropZone.classList.remove('ring-2', 'ring-slate-300');
+                    dropZone.classList.remove('ring-2', 'ring-[#1D546D]/30');
 
                     if (!activeCard) {
                         return;

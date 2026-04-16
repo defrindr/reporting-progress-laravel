@@ -40,13 +40,13 @@
 
     @if ($authUser)
         <div class="app-shell lg:pl-76">
-            <aside id="app-sidebar" class="app-sidebar fixed inset-y-3 left-3 z-40 flex w-72 -translate-x-[120%] flex-col rounded-3xl border border-slate-800/80 p-5 shadow-2xl shadow-slate-950/45 transition-transform duration-300 lg:translate-x-0">
+            <aside id="app-sidebar" class="app-sidebar fixed inset-y-3 left-3 z-40 flex w-72 -translate-x-[120%] flex-col rounded-3xl border border-white/[0.08] p-5 shadow-2xl shadow-slate-950/45 backdrop-blur-xl transition-transform duration-300 lg:translate-x-0">
                 <a href="{{ route('dashboard') }}" class="mb-6 block">
                     <p class="text-xs uppercase tracking-[0.18em] text-slate-400">Internship Suite</p>
                     <p class="mt-1 text-xl font-semibold tracking-tight text-white">Progress Console</p>
                 </a>
 
-                <div class="mb-5 rounded-2xl border border-slate-700 bg-slate-900/45 px-4 py-3">
+                <div class="glass-dark mb-5 rounded-2xl border border-white/[0.06] px-4 py-3">
                     <p class="text-xs uppercase tracking-wide text-slate-500">Signed In</p>
                     <p class="mt-1 text-sm font-semibold text-slate-100">{{ $authUser->name }}</p>
                     <p class="text-xs text-slate-400">{{ $authUser->email }}</p>
@@ -72,17 +72,17 @@
 
                 <form method="POST" action="{{ route('logout') }}" class="mt-auto pt-5">
                     @csrf
-                    <button type="submit" class="w-full rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-white">Logout</button>
+                    <button type="submit" class="glass w-full rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-white/25">Logout</button>
                 </form>
             </aside>
 
             <div id="sidebar-backdrop" class="fixed inset-0 z-30 hidden bg-slate-900/45 lg:hidden"></div>
 
             <main class="min-h-screen p-3 sm:p-5 lg:p-6">
-                <header class="app-content-panel sticky top-3 z-20 mb-5 rounded-2xl px-4 py-3">
+                <header class="glass sticky top-3 z-20 mb-5 rounded-2xl px-4 py-3">
                     <div class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
-                            <button id="sidebar-toggle" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm lg:hidden">
+                            <button id="sidebar-toggle" type="button" class="glass inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-700 lg:hidden">
                                 <span class="sr-only">Open menu</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16" />
@@ -99,12 +99,12 @@
                             <button
                                 type="button"
                                 data-theme-toggle
-                                class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700"
+                                class="glass inline-flex items-center rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-white/20"
                             >
                                 <span data-theme-label>Dark Mode</span>
                             </button>
 
-                            <div class="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 sm:block">
+                            <div class="glass hidden rounded-xl px-3 py-2 text-xs text-slate-600 sm:block">
                                 {{ $isManager ? 'Mode Monitoring' : 'Mode Operasional' }}
                             </div>
                         </div>

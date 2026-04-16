@@ -8,7 +8,7 @@
                 <p class="text-sm text-slate-500">Kelola daftar universitas dan sekolah vokasi.</p>
             </div>
 
-            <button type="button" onclick="document.getElementById('create-institution-modal').showModal()" class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Tambah Institution</button>
+            <button type="button" onclick="document.getElementById('create-institution-modal').showModal()" class="btn-primary">Tambah Institution</button>
         </header>
 
         <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -32,8 +32,8 @@
                     <option value="desc" @selected(($filters['direction'] ?? '') === 'desc')>DESC</option>
                 </select>
 
-                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Terapkan</button>
-                <a href="{{ route('admin.institutions.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm hover:bg-slate-50 dark:hover:bg-slate-700">Reset</a>
+                <button type="submit" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold btn-ghost">Terapkan</button>
+                <a href="{{ route('admin.institutions.index') }}" class="rounded-xl border border-slate-300 px-4 py-2.5 text-center text-sm btn-ghost">Reset</a>
             </form>
         </article>
 
@@ -58,7 +58,7 @@
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         type="button"
-                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700"
+                                        class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold btn-ghost"
                                         data-edit-action="{{ route('admin.institutions.update', $institution) }}"
                                         data-name="{{ $institution->name }}"
                                         data-type="{{ $institution->type }}"
@@ -99,7 +99,7 @@
                 <option value="vocational">vocational</option>
             </select>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Simpan</button>
+            <button type="submit" class="btn-primary w-full">Simpan</button>
         </form>
     </dialog>
 
@@ -119,7 +119,7 @@
                 <option value="vocational">vocational</option>
             </select>
 
-            <button type="submit" class="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Update</button>
+            <button type="submit" class="btn-primary w-full">Update</button>
         </form>
     </dialog>
 
