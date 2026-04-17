@@ -62,7 +62,7 @@
 
             <section class="p-6 sm:p-10">
                 <div class="!border-0 glass rounded-2xl p-6 sm:p-8">
-                    <h2 class="text-2xl font-semibold tracking-tight">Masuk ke Akun</h2>
+                    <h2 class="text-2xl font-semibold tracking-tight">Masuk ke Akun anda/h2>
                     <p class="mt-1 text-sm text-slate-500">Gunakan email dan password yang sudah terdaftar.</p>
 
                     @if ($errors->any())
