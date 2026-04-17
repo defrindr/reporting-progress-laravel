@@ -1,0 +1,14 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "ordered_imports": true,
+        "phpdoc_separation": true,
+        "phpdoc_order": true,
+        "not_operator_with_space": true,
+        "trailing_comma_in_multiline": true,
+        "php_unit_test_case_static_method_calls": true,
+        "single_quote": true,
+        "no_empty_comment": true,
+        "no_useless_else": true
+    }
+}
